@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  COUNTRY_MANAGER
+  AGENCY_MANAGER
+}
+
+enum MonitoringType {
+  KILOMETERS
+  HOURS
+}
+
+enum DocumentType {
+  DRIVING_LICENSE
+  MEDICAL_CERTIFICATE
+}
+
+// ─── Utilizatori si Autentificare ────────────────────────────────
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          Role
+  agency        Agency?        @relation(fields: [agencyId], references: [id])
+  agencyId      String?
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+// ─── Agentii ─────────────────────────────────────────────────────
+
+model Agency {
+  id        String    @id @default(uuid())
+  name      String
+  address   String?
+  city      String?
+  users     User[]
+  vehicles  Vehicle[]
+  drivers   Driver[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("agencies")
+}
+
+// ─── Categorii Vehicule (Globale) ────────────────────────────────
+
+model VehicleCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  vehicles    Vehicle[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("vehicle_categories")
+}
+
+// ─── Vehicule ────────────────────────────────────────────────────
+
+model Vehicle {
+  id                String          @id @default(uuid())
+  name              String
+  plateNumber       String          @unique
+  category          VehicleCategory @relation(fields: [categoryId], references: [id])
+  categoryId        String
+  agency            Agency          @relation(fields: [agencyId], references: [id])
+  agencyId          String
+  monitoringType    MonitoringType
+  currentKm         Float?          @default(0)
+  currentHours      Float?          @default(0)
+  revisionThreshold Float?
+  itpExpiryDate     DateTime?
+  rcaExpiryDate     DateTime?
+  drivers           DriverVehicle[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("vehicles")
+}
+
+// ─── Soferi ──────────────────────────────────────────────────────
+
+model Driver {
+  id        String           @id @default(uuid())
+  firstName String
+  lastName  String
+  phone     String?
+  email     String?
+  agency    Agency           @relation(fields: [agencyId], references: [id])
+  agencyId  String
+  vehicles  DriverVehicle[]
+  documents DriverDocument[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@map("drivers")
+}
+
+model DriverDocument {
+  id         String       @id @default(uuid())
+  driver     Driver       @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driverId   String
+  type       DocumentType
+  expiryDate DateTime?
+  filePath   String?
+  fileName   String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@map("driver_documents")
+}
+
+// ─── Legatura Sofer-Vehicul (Many-to-Many) ───────────────────────
+
+model DriverVehicle {
+  id        String   @id @default(uuid())
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driverId  String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId String
+  createdAt DateTime @default(now())
+
+  @@unique([driverId, vehicleId])
+  @@map("driver_vehicles")
+}

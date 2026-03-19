@@ -1,0 +1,193 @@
+import prisma from '../../config/database';
+import { CreateVehicleInput, UpdateVehicleInput } from './vehicles.schema';
+import { AppError } from '../../utils/AppError';
+
+export const vehiclesService = {
+  async list(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    agencyId?: string;
+    categoryId?: string;
+  }) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const cappedLimit = Math.min(limit, 100);
+    const skip = (page - 1) * cappedLimit;
+
+    const where: any = {};
+
+    if (query.agencyId) {
+      where.agencyId = query.agencyId;
+    }
+
+    if (query.categoryId) {
+      where.categoryId = query.categoryId;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { plateNumber: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.vehicle.findMany({
+        where,
+        skip,
+        take: cappedLimit,
+        include: {
+          category: true,
+          agency: true,
+          drivers: {
+            include: {
+              driver: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.vehicle.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit: cappedLimit,
+      totalPages: Math.ceil(total / cappedLimit),
+    };
+  },
+
+  async getById(id: string) {
+    return prisma.vehicle.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        agency: true,
+        drivers: {
+          include: {
+            driver: true,
+          },
+        },
+      },
+    });
+  },
+
+  async create(data: CreateVehicleInput) {
+    const agency = await prisma.agency.findUnique({ where: { id: data.agencyId } });
+    if (!agency) throw new AppError('Agentia nu a fost gasita', 404);
+
+    const createData: any = { ...data };
+
+    if (data.itpExpiryDate) {
+      createData.itpExpiryDate = new Date(data.itpExpiryDate);
+    }
+    if (data.rcaExpiryDate) {
+      createData.rcaExpiryDate = new Date(data.rcaExpiryDate);
+    }
+
+    return prisma.vehicle.create({
+      data: createData,
+      include: {
+        category: true,
+        agency: true,
+      },
+    });
+  },
+
+  async update(id: string, data: UpdateVehicleInput) {
+    const updateData: any = { ...data };
+
+    if (data.itpExpiryDate !== undefined) {
+      updateData.itpExpiryDate = data.itpExpiryDate ? new Date(data.itpExpiryDate) : null;
+    }
+    if (data.rcaExpiryDate !== undefined) {
+      updateData.rcaExpiryDate = data.rcaExpiryDate ? new Date(data.rcaExpiryDate) : null;
+    }
+
+    return prisma.vehicle.update({
+      where: { id },
+      data: updateData,
+      include: {
+        category: true,
+        agency: true,
+      },
+    });
+  },
+
+  async delete(id: string) {
+    return prisma.vehicle.delete({ where: { id } });
+  },
+
+  async assignDriver(vehicleId: string, driverId: string) {
+    const existing = await prisma.driverVehicle.findUnique({
+      where: {
+        driverId_vehicleId: {
+          driverId,
+          vehicleId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new AppError('Soferul este deja asignat', 409);
+    }
+
+    return prisma.driverVehicle.create({
+      data: {
+        driverId,
+        vehicleId,
+      },
+      include: {
+        driver: true,
+        vehicle: true,
+      },
+    });
+  },
+
+  async unassignDriver(vehicleId: string, driverId: string) {
+    return prisma.driverVehicle.delete({
+      where: {
+        driverId_vehicleId: {
+          driverId,
+          vehicleId,
+        },
+      },
+    });
+  },
+
+  async listByCategory(agencyId?: string) {
+    const where: any = {};
+    if (agencyId) {
+      where.agencyId = agencyId;
+    }
+
+    const categories = await prisma.vehicleCategory.findMany({
+      include: {
+        vehicles: {
+          where,
+          include: {
+            agency: true,
+            drivers: {
+              include: {
+                driver: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return categories.map((category) => ({
+      category: {
+        id: category.id,
+        name: category.name,
+        description: category.description,
+      },
+      vehicles: category.vehicles,
+    }));
+  },
+};
