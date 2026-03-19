@@ -206,33 +206,33 @@ function VehicleModal({
 
   const defaultValues: VehicleFormValues = vehicle
     ? {
-        name: vehicle.name,
-        plateNumber: vehicle.plateNumber,
-        categoryId: defaultCategoryId || '',
-        agencyId: vehicle.agency.id,
-        monitoringType: vehicle.monitoringType,
-        currentKm: vehicle.currentKm,
-        currentHours: vehicle.currentHours,
-        revisionThreshold: vehicle.revisionThreshold,
-        itpExpiryDate: vehicle.itpExpiryDate
-          ? vehicle.itpExpiryDate.slice(0, 10)
-          : null,
-        rcaExpiryDate: vehicle.rcaExpiryDate
-          ? vehicle.rcaExpiryDate.slice(0, 10)
-          : null,
-      }
+      name: vehicle.name,
+      plateNumber: vehicle.plateNumber,
+      categoryId: defaultCategoryId || '',
+      agencyId: vehicle.agency.id,
+      monitoringType: vehicle.monitoringType,
+      currentKm: vehicle.currentKm,
+      currentHours: vehicle.currentHours,
+      revisionThreshold: vehicle.revisionThreshold,
+      itpExpiryDate: vehicle.itpExpiryDate
+        ? vehicle.itpExpiryDate.slice(0, 10)
+        : null,
+      rcaExpiryDate: vehicle.rcaExpiryDate
+        ? vehicle.rcaExpiryDate.slice(0, 10)
+        : null,
+    }
     : {
-        name: '',
-        plateNumber: '',
-        categoryId: defaultCategoryId || '',
-        agencyId: isAgencyManager ? (user?.agencyId ?? '') : '',
-        monitoringType: 'KILOMETERS' as const,
-        currentKm: null,
-        currentHours: null,
-        revisionThreshold: null,
-        itpExpiryDate: null,
-        rcaExpiryDate: null,
-      };
+      name: '',
+      plateNumber: '',
+      categoryId: defaultCategoryId || '',
+      agencyId: isAgencyManager ? (user?.agencyId ?? '') : '',
+      monitoringType: 'KILOMETERS' as const,
+      currentKm: null,
+      currentHours: null,
+      revisionThreshold: null,
+      itpExpiryDate: null,
+      rcaExpiryDate: null,
+    };
 
   const {
     register,
@@ -787,13 +787,14 @@ export default function FleetPage() {
 
   // --- Render ---
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-3 animate-fade-in">
       {/* Header */}
       <PageHeader
         title="Management Flota"
+        className="-mt-2 mb-0"
         description={`${vehiclesByCategoryData?.reduce((acc: number, g: VehiclesByCategory) => acc + g.vehicles.length, 0) ?? 0} vehicule in ${vehiclesByCategoryData?.length ?? 0} categorii`}
       >
-        <Button onClick={handleAddCategory} className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+        <Button onClick={handleAddCategory} className="mt-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
           <Plus className="mr-2 h-4 w-4" />
           Adauga Categorie
         </Button>
@@ -844,7 +845,7 @@ export default function FleetPage() {
           <Accordion
             type="multiple"
             defaultValue={defaultAccordionValues}
-            className="space-y-3"
+            className="space-y-2"
           >
             {vehiclesByCategoryData.map(({ category, vehicles }) => (
               <AccordionItem
@@ -852,55 +853,57 @@ export default function FleetPage() {
                 value={category.id}
                 className="rounded-lg border bg-card px-4"
               >
-                <div className="flex items-center py-4">
-                  <AccordionTrigger className="hover:no-underline flex-1 py-0">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold tracking-tight">
-                        {category.name}
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex flex-1 items-center gap-3">
+                    <span className="text-lg font-bold tracking-tight">
+                      {category.name}
+                    </span>
+                    <Badge variant="secondary">
+                      {vehicles.length}{' '}
+                      {vehicles.length === 1 ? 'vehicul' : 'vehicule'}
+                    </Badge>
+                    {category.description && (
+                      <span className="hidden text-sm text-muted-foreground sm:inline">
+                        — {category.description}
                       </span>
-                      <Badge variant="secondary">
-                        {vehicles.length}{' '}
-                        {vehicles.length === 1 ? 'vehicul' : 'vehicule'}
-                      </Badge>
-                      {category.description && (
-                        <span className="hidden text-sm text-muted-foreground sm:inline">
-                          — {category.description}
-                        </span>
-                      )}
+                    )}
+                    {/* Action buttons – stopPropagation prevents toggling accordion */}
+                    <div
+                      className="ml-auto flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Editeaza"
+                        onClick={() => handleEditCategory(category)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        aria-label="Sterge"
+                        onClick={() => setDeleteCategoryTarget(category)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-dashed"
+                        onClick={() => handleAddVehicle(category.id)}
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" />
+                        Adauga Vehicul
+                      </Button>
                     </div>
-                  </AccordionTrigger>
-                  <div className="ml-4 flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Editeaza"
-                      onClick={() => handleEditCategory(category)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      aria-label="Sterge"
-                      onClick={() => setDeleteCategoryTarget(category)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-dashed"
-                      onClick={() => handleAddVehicle(category.id)}
-                    >
-                      <Plus className="mr-1 h-3.5 w-3.5" />
-                      Adauga Vehicul
-                    </Button>
                   </div>
-                </div>
+                </AccordionTrigger>
 
                 <AccordionContent>
                   {vehicles.length === 0 ? (
@@ -920,39 +923,39 @@ export default function FleetPage() {
                     </div>
                   ) : (
                     <div className="overflow-x-auto rounded-md border">
-                      <Table>
+                      <Table className="[&_td]:py-2 [&_th]:py-0">
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Nume</TableHead>
-                            <TableHead>Nr. Inmatriculare</TableHead>
-                            <TableHead>Tip Monitorizare</TableHead>
-                            <TableHead>Km/Ore Curente</TableHead>
-                            <TableHead>Prag Revizie</TableHead>
-                            <TableHead>ITP</TableHead>
-                            <TableHead>RCA</TableHead>
-                            <TableHead>Soferi</TableHead>
-                            <TableHead className="text-right">Actiuni</TableHead>
+                            <TableHead className="text-center">Nume</TableHead>
+                            <TableHead className="text-center">Nr. Inmatriculare</TableHead>
+                            <TableHead className="text-center">Tip Monitorizare</TableHead>
+                            <TableHead className="text-center">Km/Ore Curente</TableHead>
+                            <TableHead className="text-center">Prag Revizie</TableHead>
+                            <TableHead className="text-center">ITP</TableHead>
+                            <TableHead className="text-center">RCA</TableHead>
+                            <TableHead className="text-center">Soferi</TableHead>
+                            <TableHead className="text-center">Actiuni</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {vehicles.map((vehicle) => (
                             <TableRow key={vehicle.id} className="group hover:bg-muted/50 transition-all duration-150 border-l-2 border-l-transparent hover:border-l-primary cursor-pointer">
-                              <TableCell className="font-medium">
+                              <TableCell className="font-medium text-center">
                                 {vehicle.name}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold">
                                   {vehicle.plateNumber}
                                 </code>
                               </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className="w-[84px] justify-center">
                                   {vehicle.monitoringType === 'KILOMETERS'
                                     ? 'Kilometri'
                                     : 'Ore'}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 {vehicle.monitoringType === 'KILOMETERS'
                                   ? vehicle.currentKm != null
                                     ? `${vehicle.currentKm.toLocaleString('ro-RO')} km`
@@ -961,22 +964,22 @@ export default function FleetPage() {
                                     ? `${vehicle.currentHours.toLocaleString('ro-RO')} h`
                                     : '-'}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 {vehicle.revisionThreshold != null
                                   ? vehicle.monitoringType === 'KILOMETERS'
                                     ? `${vehicle.revisionThreshold.toLocaleString('ro-RO')} km`
                                     : `${vehicle.revisionThreshold.toLocaleString('ro-RO')} h`
                                   : '-'}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 <DateBadge date={vehicle.itpExpiryDate} />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 <DateBadge date={vehicle.rcaExpiryDate} />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 {vehicle.drivers.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
+                                  <div className="flex flex-wrap justify-center gap-1">
                                     {vehicle.drivers.map(({ driver }) => (
                                       <Badge
                                         key={driver.id}
@@ -993,8 +996,8 @@ export default function FleetPage() {
                                   </span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
+                              <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-1">
                                   <Button
                                     variant="ghost"
                                     size="sm"
