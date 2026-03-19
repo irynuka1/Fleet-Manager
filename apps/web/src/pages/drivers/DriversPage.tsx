@@ -522,9 +522,9 @@ function DriverDialog({
   const isEditing = !!driver;
 
   const { data: agenciesData } = useQuery({
-    queryKey: ['agencies'],
+    queryKey: ['agencies-all'],
     queryFn: async () => {
-      const { data } = await api.get('/agencies');
+      const { data } = await api.get('/agencies', { params: { limit: 100 } });
       return data;
     },
     enabled: !isAgencyManager,
