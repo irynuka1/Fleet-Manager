@@ -852,31 +852,30 @@ export default function FleetPage() {
                 value={category.id}
                 className="rounded-lg border bg-card px-4"
               >
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold tracking-tight">
-                      {category.name}
-                    </span>
-                    <Badge variant="secondary">
-                      {vehicles.length}{' '}
-                      {vehicles.length === 1 ? 'vehicul' : 'vehicule'}
-                    </Badge>
-                    {category.description && (
-                      <span className="hidden text-sm text-muted-foreground sm:inline">
-                        — {category.description}
+                <div className="flex items-center py-4">
+                  <AccordionTrigger className="hover:no-underline flex-1 py-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold tracking-tight">
+                        {category.name}
                       </span>
-                    )}
-                  </div>
-                  <div className="ml-auto mr-4 flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {vehicles.length}{' '}
+                        {vehicles.length === 1 ? 'vehicul' : 'vehicule'}
+                      </Badge>
+                      {category.description && (
+                        <span className="hidden text-sm text-muted-foreground sm:inline">
+                          — {category.description}
+                        </span>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <div className="ml-4 flex items-center gap-2">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       aria-label="Editeaza"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditCategory(category);
-                      }}
+                      onClick={() => handleEditCategory(category)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -886,10 +885,7 @@ export default function FleetPage() {
                       size="sm"
                       className="text-destructive hover:text-destructive"
                       aria-label="Sterge"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteCategoryTarget(category);
-                      }}
+                      onClick={() => setDeleteCategoryTarget(category)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -898,16 +894,13 @@ export default function FleetPage() {
                       variant="outline"
                       size="sm"
                       className="border-dashed"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddVehicle(category.id);
-                      }}
+                      onClick={() => handleAddVehicle(category.id)}
                     >
                       <Plus className="mr-1 h-3.5 w-3.5" />
                       Adauga Vehicul
                     </Button>
                   </div>
-                </AccordionTrigger>
+                </div>
 
                 <AccordionContent>
                   {vehicles.length === 0 ? (

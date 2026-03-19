@@ -472,7 +472,7 @@ function VehiclesTab({ driver }: { driver: Driver }) {
             <SelectContent>
               {availableVehicles.length === 0 ? (
                 <SelectItem value="_none" disabled>
-                  Niciun vehicul disponibil
+                  Niciun vehicul disponibil in aceasta agentie
                 </SelectItem>
               ) : (
                 availableVehicles.map((v) => (

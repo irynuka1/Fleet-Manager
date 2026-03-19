@@ -23,10 +23,10 @@ async function main() {
 
   // Agentii demo
   const agentiaBucuresti = await prisma.agency.upsert({
-    where: { id: 'agency-bucuresti' },
+    where: { id: 'b0000000-0000-0000-0000-000000000001' },
     update: {},
     create: {
-      id: 'agency-bucuresti',
+      id: 'b0000000-0000-0000-0000-000000000001',
       name: 'Agentia Bucuresti',
       address: 'Bd. Unirii 10',
       city: 'Bucuresti',
@@ -34,10 +34,10 @@ async function main() {
   });
 
   const agentiaCluj = await prisma.agency.upsert({
-    where: { id: 'agency-cluj' },
+    where: { id: 'b0000000-0000-0000-0000-000000000002' },
     update: {},
     create: {
-      id: 'agency-cluj',
+      id: 'b0000000-0000-0000-0000-000000000002',
       name: 'Agentia Cluj',
       address: 'Str. Memorandumului 5',
       city: 'Cluj-Napoca',
@@ -159,10 +159,10 @@ async function main() {
 
   // Soferi demo
   const sofer1 = await prisma.driver.upsert({
-    where: { id: 'driver-1' },
+    where: { id: 'a0000000-0000-0000-0000-000000000001' },
     update: {},
     create: {
-      id: 'driver-1',
+      id: 'a0000000-0000-0000-0000-000000000001',
       firstName: 'Gheorghe',
       lastName: 'Dragomir',
       phone: '0721000001',
@@ -172,10 +172,10 @@ async function main() {
   });
 
   const sofer2 = await prisma.driver.upsert({
-    where: { id: 'driver-2' },
+    where: { id: 'a0000000-0000-0000-0000-000000000002' },
     update: {},
     create: {
-      id: 'driver-2',
+      id: 'a0000000-0000-0000-0000-000000000002',
       firstName: 'Vasile',
       lastName: 'Rusu',
       phone: '0721000002',
