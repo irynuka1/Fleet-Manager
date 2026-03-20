@@ -167,7 +167,7 @@ export default function UsersPage() {
   const { data: agenciesData } = useQuery<{ data: AgencyOption[] }>({
     queryKey: ['agencies-list'],
     queryFn: async () => {
-      const { data } = await api.get('/agencies');
+      const { data } = await api.get('/agencies', { params: { limit: 100 } });
       return data;
     },
   });
