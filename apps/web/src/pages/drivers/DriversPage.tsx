@@ -228,6 +228,7 @@ function DocumentsTab({ driver }: { driver: Driver }) {
     },
     onSuccess: () => {
       toast.success('Document incarcat cu succes');
+      queryClient.invalidateQueries({ queryKey: ['driver', driver.id] });
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       setExpiryDate('');
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -244,6 +245,7 @@ function DocumentsTab({ driver }: { driver: Driver }) {
     },
     onSuccess: () => {
       toast.success('Document sters');
+      queryClient.invalidateQueries({ queryKey: ['driver', driver.id] });
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
     },
     onError: (error: any) => {
@@ -399,6 +401,7 @@ function VehiclesTab({ driver }: { driver: Driver }) {
     },
     onSuccess: () => {
       toast.success('Vehicul asignat cu succes');
+      queryClient.invalidateQueries({ queryKey: ['driver', driver.id] });
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles-by-category'] });
       setSelectedVehicleId('');
@@ -415,6 +418,7 @@ function VehiclesTab({ driver }: { driver: Driver }) {
     },
     onSuccess: () => {
       toast.success('Vehicul dezasignat');
+      queryClient.invalidateQueries({ queryKey: ['driver', driver.id] });
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles-by-category'] });
     },
@@ -510,16 +514,28 @@ function VehiclesTab({ driver }: { driver: Driver }) {
 function DriverDialog({
   open,
   onOpenChange,
-  driver,
+  driverId,
+  initialData,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  driver: Driver | null;
+  driverId: string | null;
+  initialData?: Driver | null;
 }) {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const isAgencyManager = user?.role === 'AGENCY_MANAGER';
-  const isEditing = !!driver;
+  const isEditing = !!driverId;
+
+  const { data: driver } = useQuery({
+    queryKey: ['driver', driverId],
+    queryFn: async () => {
+      const { data } = await api.get(`/drivers/${driverId}`);
+      return data.data as Driver;
+    },
+    enabled: !!driverId && open,
+    initialData: initialData || undefined,
+  });
 
   const { data: agenciesData } = useQuery({
     queryKey: ['agencies-all'],
@@ -552,14 +568,15 @@ function DriverDialog({
         email: values.email || undefined,
         agencyId: values.agencyId,
       };
-      if (isEditing) {
-        await api.put(`/drivers/${driver.id}`, body);
+      if (isEditing && driverId) {
+        await api.put(`/drivers/${driverId}`, body);
       } else {
         await api.post('/drivers', body);
       }
     },
     onSuccess: () => {
       toast.success(isEditing ? 'Sofer actualizat cu succes' : 'Sofer adaugat cu succes');
+      if (driverId) queryClient.invalidateQueries({ queryKey: ['driver', driverId] });
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       onOpenChange(false);
     },
@@ -576,7 +593,7 @@ function DriverDialog({
       <DialogContent className="sm:max-w-[650px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing
+            {isEditing && driver
               ? `${driver.firstName} ${driver.lastName}`
               : 'Adauga sofer nou'}
           </DialogTitle>
@@ -587,7 +604,7 @@ function DriverDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isEditing ? (
+        {isEditing && driver ? (
           <Tabs defaultValue="info" className="w-full">
             <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="info">Informatii</TabsTrigger>
@@ -737,7 +754,7 @@ export default function DriversPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
@@ -950,7 +967,8 @@ export default function DriversPage() {
             setDialogOpen(v);
             if (!v) setSelectedDriver(null);
           }}
-          driver={selectedDriver}
+          driverId={selectedDriver?.id || null}
+          initialData={selectedDriver}
         />
       )}
 
