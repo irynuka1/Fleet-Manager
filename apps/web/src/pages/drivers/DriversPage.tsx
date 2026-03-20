@@ -812,13 +812,14 @@ export default function DriversPage() {
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in space-y-4">
       {/* Header */}
       <PageHeader
+        className="-mt-2 -mb-1"
         title="Management Soferi"
         description={`${driversResponse?.total ?? 0} soferi inregistrati`}
       >
-        <Button onClick={() => openCreate()} className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+        <Button onClick={() => openCreate()} className="mt-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
           <Plus className="mr-2 h-4 w-4" />
           Adauga Sofer
         </Button>
@@ -826,7 +827,7 @@ export default function DriversPage() {
 
       {/* Search */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -867,15 +868,15 @@ export default function DriversPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nume Complet</TableHead>
-                    <TableHead>Telefon</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead className="pl-14">Nume Complet</TableHead>
+                    <TableHead className="text-center">Telefon</TableHead>
+                    <TableHead className="text-center">Email</TableHead>
                     {user?.role !== 'AGENCY_MANAGER' && (
-                      <TableHead>Agentie</TableHead>
+                      <TableHead className="text-center">Agentie</TableHead>
                     )}
                     <TableHead className="text-center">Documente</TableHead>
                     <TableHead className="text-center">Vehicule</TableHead>
-                    <TableHead className="text-right">Actiuni</TableHead>
+                    <TableHead className="text-center">Actiuni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -885,7 +886,7 @@ export default function DriversPage() {
                       className="cursor-pointer group hover:bg-muted/50 transition-all duration-150 border-l-2 border-l-transparent hover:border-l-primary"
                       onClick={() => openEdit(driver)}
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium pl-14">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-[11px] font-bold text-white shadow-sm shadow-teal-500/20">
                             {driver.firstName?.[0]}{driver.lastName?.[0]}
@@ -895,10 +896,10 @@ export default function DriversPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{driver.phone ?? '-'}</TableCell>
-                      <TableCell>{driver.email ?? '-'}</TableCell>
+                      <TableCell className="text-center">{driver.phone ?? '-'}</TableCell>
+                      <TableCell className="text-center">{driver.email ?? '-'}</TableCell>
                       {user?.role !== 'AGENCY_MANAGER' && (
-                        <TableCell>{driver.agency?.name ?? '-'}</TableCell>
+                        <TableCell className="text-center">{driver.agency?.name ?? '-'}</TableCell>
                       )}
                       <TableCell className="text-center">
                         <Badge variant="secondary">{driver.documents.length}</Badge>
@@ -906,8 +907,8 @@ export default function DriversPage() {
                       <TableCell className="text-center">
                         <Badge variant="secondary">{driver.vehicles.length}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
