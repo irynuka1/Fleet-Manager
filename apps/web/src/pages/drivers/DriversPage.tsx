@@ -191,6 +191,7 @@ function DocumentsTab({ driver }: { driver: Driver }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<string>('DRIVING_LICENSE');
   const [expiryDate, setExpiryDate] = useState('');
+  const [docFile, setDocFile] = useState<File | null>(null);
 
   const handleDownload = async (doc: any) => {
     if (!doc.filePath) {
@@ -231,6 +232,7 @@ function DocumentsTab({ driver }: { driver: Driver }) {
       queryClient.invalidateQueries({ queryKey: ['driver', driver.id] });
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       setExpiryDate('');
+      setDocFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     },
     onError: (error: any) => {
@@ -299,23 +301,17 @@ function DocumentsTab({ driver }: { driver: Driver }) {
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{doc.fileName}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDownload(doc)}
-                >
-                  <Download className="mr-1 h-4 w-4" />
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="sm" onClick={() => handleDownload(doc)}>
                   Descarca
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => deleteDocMutation.mutate(doc.id)}
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => deleteDocMutation.mutate(doc.id)} 
                   disabled={deleteDocMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -348,25 +344,40 @@ function DocumentsTab({ driver }: { driver: Driver }) {
             <Label>Data expirare</Label>
             <Input
               type="date"
+              max="9999-12-31"
               value={expiryDate}
+              onKeyDown={(e) => {
+                if (expiryDate?.length === 10 && e.key >= '0' && e.key <= '9') {
+                  e.preventDefault();
+                }
+              }}
               onChange={(e) => setExpiryDate(e.target.value)}
             />
           </div>
         </div>
         <div className="space-y-2">
           <Label>Fisier</Label>
-          <Input type="file" ref={fileInputRef} accept=".pdf,.jpg,.jpeg,.png" />
+          <div className="relative group">
+            <Input 
+              type="file" 
+              ref={fileInputRef} 
+              accept=".pdf,.jpg,.jpeg,.png" 
+              onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+            />
+            <div className="flex h-10 w-full rounded-md border border-input bg-background items-center justify-center text-sm text-muted-foreground px-3 group-hover:bg-accent group-hover:text-accent-foreground transition-colors duration-200">
+              {docFile ? docFile.name : 'Niciun fisier selectat'}
+            </div>
+          </div>
         </div>
         <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          disabled={!docFile || uploadMutation.isPending}
           onClick={handleUpload}
-          disabled={uploadMutation.isPending}
-          size="sm"
         >
-          {uploadMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Upload className="mr-2 h-4 w-4" />
-          )}
+          {uploadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Incarca document
         </Button>
       </div>

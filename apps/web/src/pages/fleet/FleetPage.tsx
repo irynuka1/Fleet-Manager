@@ -12,6 +12,7 @@ import {
   FolderOpen,
   AlertCircle,
   Truck,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -595,25 +596,45 @@ function VehicleModal({
                     <FolderOpen className="h-4 w-4" />
                     Fisiere atasate
                   </h4>
-                  
+
                   {vehicle.documents && vehicle.documents.length > 0 ? (
                     <div className="space-y-2 mb-6">
                       {vehicle.documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 border rounded-md">
-                          <div>
-                            <p className="font-medium text-sm flex items-center gap-2">
-                              {doc.type}
-                              {doc.expiryDate && (
-                                <Badge variant="outline" className="text-xs">
-                                  Expira: {formatDate(doc.expiryDate)}
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between rounded-lg border p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    doc.type === 'ITP'
+                                      ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                      : doc.type === 'RCA'
+                                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                        : doc.type === 'REGISTRATION'
+                                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                          : doc.type === 'INSURANCE'
+                                            ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+                                            : 'bg-gray-500/10 text-gray-600 border-gray-500/20'
+                                  }
+                                >
+                                  {doc.type === 'REGISTRATION' ? 'Talon/Inmatriculare' : doc.type === 'INSURANCE' ? 'Asigurare Casco' : doc.type}
                                 </Badge>
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{doc.fileName}</p>
+                                {doc.expiryDate && (
+                                  <span className="text-xs text-muted-foreground">
+                                    Expira: {formatDate(doc.expiryDate)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                           <div className="flex gap-2">
                             <Button type="button" variant="secondary" size="sm" onClick={() => handleDownload(doc)}>
-                              Download
+                              Descarcă
                             </Button>
                             <Button type="button" variant="destructive" size="sm" onClick={() => deleteDocMutation.mutate(doc.id)} disabled={deleteDocMutation.isPending}>
                               <Trash2 className="h-4 w-4" />
@@ -647,12 +668,32 @@ function VehicleModal({
                       </div>
                       <div className="space-y-2">
                         <Label>Data Expirare (Obligatorie)</Label>
-                        <Input type="date" value={docExpiry} onChange={(e) => setDocExpiry(e.target.value)} />
+                        <Input
+                          type="date"
+                          max="9999-12-31"
+                          value={docExpiry}
+                          onKeyDown={(e) => {
+                            if (docExpiry?.length === 10 && e.key >= '0' && e.key <= '9') {
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => setDocExpiry(e.target.value)}
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Fisier (PDF/Imagine)</Label>
-                      <Input type="file" accept=".pdf,image/*" onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
+                      <div className="relative group">
+                        <Input
+                          type="file"
+                          accept=".pdf,image/*"
+                          onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <div className="flex h-10 w-full rounded-md border border-input bg-background items-center justify-center text-sm text-muted-foreground px-3 group-hover:bg-accent group-hover:text-accent-foreground transition-colors duration-200">
+                          {docFile ? docFile.name : 'Niciun fisier selectat'}
+                        </div>
+                      </div>
                     </div>
                     <Button
                       type="button"
