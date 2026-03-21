@@ -93,9 +93,7 @@ const createUserSchema = z
     lastName: z.string().min(1, 'Numele este obligatoriu'),
     email: z.string().email('Adresa de email invalida'),
     password: z.string().min(6, 'Parola trebuie sa aiba minim 6 caractere'),
-    role: z.enum(['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'], {
-      required_error: 'Rolul este obligatoriu',
-    }),
+    role: z.enum(['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER']),
     agencyId: z.string().optional(),
   })
   .refine(
@@ -115,9 +113,7 @@ const editUserSchema = z
     lastName: z.string().min(1, 'Numele este obligatoriu'),
     email: z.string().email('Adresa de email invalida'),
     password: z.string().optional(),
-    role: z.enum(['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'], {
-      required_error: 'Rolul este obligatoriu',
-    }),
+    role: z.enum(['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER']),
     agencyId: z.string().optional(),
   })
   .refine(
@@ -142,7 +138,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -150,7 +146,7 @@ export default function UsersPage() {
 
   const limit = 20;
 
-  useEffect(() => () => clearTimeout(debounceRef.current), []);
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   // --- Queries ---
 
@@ -218,15 +214,26 @@ export default function UsersPage() {
   // --- Form ---
 
   const form = useForm<UserFormValues>({
+    // @ts-ignore
     resolver: zodResolver(editingUser ? editUserSchema : createUserSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
       email: '',
       password: '',
-      role: 'AGENCY_MANAGER' as UserRole,
+      role: 'AGENCY_MANAGER',
       agencyId: '',
     },
+    values: editingUser
+      ? {
+          firstName: editingUser.firstName,
+          lastName: editingUser.lastName,
+          email: editingUser.email,
+          password: '',
+          role: editingUser.role,
+          agencyId: editingUser.agencyId ?? '',
+        }
+      : undefined,
   });
 
   const watchedRole = form.watch('role');
@@ -291,7 +298,7 @@ export default function UsersPage() {
         lastName: values.lastName,
         email: values.email,
         role: values.role,
-        agencyId: values.role === 'AGENCY_MANAGER' ? values.agencyId : null,
+        agencyId: values.role === 'AGENCY_MANAGER' ? values.agencyId : undefined,
       };
       if (values.password) {
         payload.password = values.password;
@@ -300,7 +307,7 @@ export default function UsersPage() {
     } else {
       const payload = {
         ...values,
-        agencyId: values.role === 'AGENCY_MANAGER' ? values.agencyId : null,
+        agencyId: values.role === 'AGENCY_MANAGER' ? values.agencyId : undefined,
       };
       createMutation.mutate(payload);
     }
@@ -469,7 +476,7 @@ export default function UsersPage() {
                 : 'Completeaza datele pentru noul utilizator.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="firstName">Prenume *</Label>

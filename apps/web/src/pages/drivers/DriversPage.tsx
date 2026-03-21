@@ -548,15 +548,19 @@ function DriverDialog({
 
   const agencies: Agency[] = agenciesData?.data ?? [];
 
+  const defaultValues = {
+    firstName: driver?.firstName ?? '',
+    lastName: driver?.lastName ?? '',
+    phone: driver?.phone ?? '',
+    email: driver?.email ?? '',
+    agencyId: driver?.agencyId ?? (isAgencyManager ? user?.agencyId ?? '' : ''),
+  };
+
   const form = useForm<DriverFormValues>({
+    // @ts-ignore
     resolver: zodResolver(driverFormSchema),
-    defaultValues: {
-      firstName: driver?.firstName ?? '',
-      lastName: driver?.lastName ?? '',
-      phone: driver?.phone ?? '',
-      email: driver?.email ?? '',
-      agencyId: driver?.agencyId ?? (isAgencyManager ? user?.agencyId ?? '' : ''),
-    },
+    defaultValues,
+    values: defaultValues,
   });
 
   const saveMutation = useMutation({
@@ -765,7 +769,7 @@ export default function DriversPage() {
     }, 400);
   }, []);
 
-  useEffect(() => () => clearTimeout(debounceRef.current), []);
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
