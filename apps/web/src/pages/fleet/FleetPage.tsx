@@ -365,10 +365,25 @@ function VehicleModal({
     },
   });
 
-  const handleDownload = (doc: VehicleDocument) => {
-    if (!doc.filePath || !api.defaults.baseURL) return;
-    const url = `${api.defaults.baseURL.replace('/api', '')}/${doc.filePath}`;
-    window.open(url, '_blank');
+  const handleDownload = async (doc: VehicleDocument) => {
+    if (!doc.filePath) {
+      toast.error('Fisierul nu este disponibil');
+      return;
+    }
+    try {
+      const filename = doc.filePath.split('/').pop();
+      const response = await api.get(`/uploads/${filename}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileName || 'document';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Eroare la descarcarea fisierului');
+    }
   };
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;

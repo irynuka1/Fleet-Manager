@@ -46,14 +46,23 @@ app.get('/api/uploads/:filename', authenticate, async (req, res, next) => {
     }
 
     // Verify the file belongs to a document the user has access to
-    const doc = await prisma.driverDocument.findFirst({
+    const driverDoc = await prisma.driverDocument.findFirst({
       where: { filePath: { endsWith: filename } },
       include: { driver: true },
     });
-    if (!doc) {
-      return res.status(404).json({ success: false, error: 'Fisier negasit' });
+    if (driverDoc) {
+      enforceAgency(req, driverDoc.driver.agencyId);
+    } else {
+      // Check vehicle documents
+      const vehicleDoc = await prisma.vehicleDocument.findFirst({
+        where: { filePath: { endsWith: filename } },
+        include: { vehicle: true },
+      });
+      if (!vehicleDoc) {
+        return res.status(404).json({ success: false, error: 'Fisier negasit' });
+      }
+      enforceAgency(req, vehicleDoc.vehicle.agencyId);
     }
-    enforceAgency(req, doc.driver.agencyId);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, error: 'Fisier negasit' });

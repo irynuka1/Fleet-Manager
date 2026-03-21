@@ -211,24 +211,24 @@ export const vehiclesService = {
 
     if (data.expiryDate) {
       createData.expiryDate = new Date(data.expiryDate);
-
-      // Auto-update vehicle ITP / RCA dates if applicable
-      if (data.type === 'ITP') {
-        await prisma.vehicle.update({
-          where: { id: vehicleId },
-          data: { itpExpiryDate: createData.expiryDate },
-        });
-      } else if (data.type === 'RCA') {
-        await prisma.vehicle.update({
-          where: { id: vehicleId },
-          data: { rcaExpiryDate: createData.expiryDate },
-        });
-      }
     }
 
-    // @ts-ignore (force IDE to ignore cache error)
-    return prisma.vehicleDocument.create({
-      data: createData,
+    // Wrap in transaction to keep vehicle dates and document in sync
+    return prisma.$transaction(async (tx) => {
+      // @ts-ignore
+      const doc = await tx.vehicleDocument.create({ data: createData });
+
+      // Auto-update vehicle ITP / RCA dates if applicable
+      if (createData.expiryDate && (data.type === 'ITP' || data.type === 'RCA')) {
+        await tx.vehicle.update({
+          where: { id: vehicleId },
+          data: data.type === 'ITP'
+            ? { itpExpiryDate: createData.expiryDate }
+            : { rcaExpiryDate: createData.expiryDate },
+        });
+      }
+
+      return doc;
     });
   },
 
