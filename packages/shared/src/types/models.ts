@@ -10,6 +10,14 @@ export enum DocumentType {
   MEDICAL_CERTIFICATE = 'MEDICAL_CERTIFICATE',
 }
 
+export enum VehicleDocumentType {
+  ITP = 'ITP',
+  RCA = 'RCA',
+  REGISTRATION = 'REGISTRATION',
+  INSURANCE = 'INSURANCE',
+  OTHER = 'OTHER',
+}
+
 export interface Agency {
   id: string;
   name: string;
@@ -55,6 +63,7 @@ export interface Vehicle {
   itpExpiryDate: string | null;
   rcaExpiryDate: string | null;
   drivers?: DriverVehicle[];
+  documents?: VehicleDocument[];
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +86,17 @@ export interface DriverDocument {
   id: string;
   driverId: string;
   type: DocumentType;
+  expiryDate: string | null;
+  filePath: string | null;
+  fileName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VehicleDocument {
+  id: string;
+  vehicleId: string;
+  type: VehicleDocumentType;
   expiryDate: string | null;
   filePath: string | null;
   fileName: string | null;

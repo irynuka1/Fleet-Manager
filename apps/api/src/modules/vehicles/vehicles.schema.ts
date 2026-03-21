@@ -25,6 +25,14 @@ export const assignDriverSchema = z.object({
   }),
 });
 
+export const createVehicleDocumentSchema = z.object({
+  body: z.object({
+    type: z.enum(['ITP', 'RCA', 'REGISTRATION', 'INSURANCE', 'OTHER']),
+    expiryDate: z.string().optional().nullable(),
+  }),
+});
+
 export type CreateVehicleInput = z.infer<typeof createVehicleSchema>['body'];
 export type UpdateVehicleInput = z.infer<typeof updateVehicleSchema>['body'];
 export type AssignDriverInput = z.infer<typeof assignDriverSchema>['body'];
+export type CreateVehicleDocumentInput = z.infer<typeof createVehicleDocumentSchema>['body'];

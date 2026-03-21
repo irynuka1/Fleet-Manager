@@ -23,6 +23,14 @@ enum DocumentType {
   MEDICAL_CERTIFICATE
 }
 
+enum VehicleDocumentType {
+  ITP
+  RCA
+  REGISTRATION
+  INSURANCE
+  OTHER
+}
+
 // ─── Utilizatori si Autentificare ────────────────────────────────
 
 model User {
@@ -84,22 +92,23 @@ model VehicleCategory {
 // ─── Vehicule ────────────────────────────────────────────────────
 
 model Vehicle {
-  id                String          @id @default(uuid())
+  id                String            @id @default(uuid())
   name              String
-  plateNumber       String          @unique
-  category          VehicleCategory @relation(fields: [categoryId], references: [id])
+  plateNumber       String            @unique
+  category          VehicleCategory   @relation(fields: [categoryId], references: [id])
   categoryId        String
-  agency            Agency          @relation(fields: [agencyId], references: [id])
+  agency            Agency            @relation(fields: [agencyId], references: [id])
   agencyId          String
   monitoringType    MonitoringType
-  currentKm         Float?          @default(0)
-  currentHours      Float?          @default(0)
+  currentKm         Float?            @default(0)
+  currentHours      Float?            @default(0)
   revisionThreshold Float?
   itpExpiryDate     DateTime?
   rcaExpiryDate     DateTime?
   drivers           DriverVehicle[]
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  documents         VehicleDocument[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@map("vehicles")
 }
@@ -134,6 +143,20 @@ model DriverDocument {
   updatedAt  DateTime     @updatedAt
 
   @@map("driver_documents")
+}
+
+model VehicleDocument {
+  id         String              @id @default(uuid())
+  vehicle    Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId  String
+  type       VehicleDocumentType
+  expiryDate DateTime?
+  filePath   String?
+  fileName   String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@map("vehicle_documents")
 }
 
 // ─── Legatura Sofer-Vehicul (Many-to-Many) ───────────────────────

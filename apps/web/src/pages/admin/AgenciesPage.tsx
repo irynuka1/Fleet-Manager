@@ -75,7 +75,7 @@ export default function AgenciesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
@@ -83,7 +83,7 @@ export default function AgenciesPage() {
 
   const limit = 20;
 
-  useEffect(() => () => clearTimeout(debounceRef.current), []);
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   // --- Queries ---
 
@@ -143,12 +143,20 @@ export default function AgenciesPage() {
   // --- Form ---
 
   const form = useForm<AgencyFormValues>({
+    // @ts-ignore
     resolver: zodResolver(agencySchema),
     defaultValues: {
       name: '',
       address: '',
       city: '',
     },
+    values: editingAgency
+      ? {
+          name: editingAgency.name,
+          address: editingAgency.address ?? '',
+          city: editingAgency.city ?? '',
+        }
+      : undefined,
   });
 
   // --- Handlers ---

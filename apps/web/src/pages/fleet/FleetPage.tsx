@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -76,6 +76,14 @@ interface Driver {
   lastName: string;
 }
 
+interface VehicleDocument {
+  id: string;
+  type: string;
+  expiryDate: string | null;
+  fileName: string | null;
+  filePath: string | null;
+}
+
 interface Vehicle {
   id: string;
   name: string;
@@ -88,6 +96,7 @@ interface Vehicle {
   rcaExpiryDate: string | null;
   agency: Agency;
   drivers: { driver: Driver }[];
+  documents: VehicleDocument[];
 }
 
 interface Category {
@@ -114,8 +123,6 @@ const vehicleSchema = z.object({
   currentKm: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nonnegative().nullable().optional()),
   currentHours: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nonnegative().nullable().optional()),
   revisionThreshold: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().positive().nullable().optional()),
-  itpExpiryDate: z.string().optional().nullable(),
-  rcaExpiryDate: z.string().optional().nullable(),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -214,12 +221,6 @@ function VehicleModal({
       currentKm: vehicle.currentKm,
       currentHours: vehicle.currentHours,
       revisionThreshold: vehicle.revisionThreshold,
-      itpExpiryDate: vehicle.itpExpiryDate
-        ? vehicle.itpExpiryDate.slice(0, 10)
-        : null,
-      rcaExpiryDate: vehicle.rcaExpiryDate
-        ? vehicle.rcaExpiryDate.slice(0, 10)
-        : null,
     }
     : {
       name: '',
@@ -230,8 +231,6 @@ function VehicleModal({
       currentKm: null,
       currentHours: null,
       revisionThreshold: null,
-      itpExpiryDate: null,
-      rcaExpiryDate: null,
     };
 
   const {
@@ -242,6 +241,7 @@ function VehicleModal({
     reset,
     formState: { errors },
   } = useForm<VehicleFormValues>({
+    // @ts-ignore
     resolver: zodResolver(vehicleSchema),
     defaultValues,
     values: defaultValues,
@@ -260,8 +260,6 @@ function VehicleModal({
         currentKm: values.monitoringType === 'KILOMETERS' ? (values.currentKm ?? null) : null,
         currentHours: values.monitoringType === 'HOURS' ? (values.currentHours ?? null) : null,
         revisionThreshold: values.revisionThreshold ?? null,
-        itpExpiryDate: values.itpExpiryDate || null,
-        rcaExpiryDate: values.rcaExpiryDate || null,
       };
       const { data } = await api.post('/vehicles', payload);
       return data;
@@ -289,8 +287,6 @@ function VehicleModal({
         currentKm: values.monitoringType === 'KILOMETERS' ? (values.currentKm ?? null) : null,
         currentHours: values.monitoringType === 'HOURS' ? (values.currentHours ?? null) : null,
         revisionThreshold: values.revisionThreshold ?? null,
-        itpExpiryDate: values.itpExpiryDate || null,
-        rcaExpiryDate: values.rcaExpiryDate || null,
       };
       const { data } = await api.put(`/vehicles/${vehicle!.id}`, payload);
       return data;
@@ -315,6 +311,66 @@ function VehicleModal({
     }
   };
 
+  // --- Document Upload State & Mutations ---
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docType, setDocType] = useState<string>('ITP');
+  const [docExpiry, setDocExpiry] = useState<string>('');
+
+  useEffect(() => {
+    if (vehicle?.documents) {
+      const types = ['ITP', 'RCA', 'REGISTRATION', 'INSURANCE', 'OTHER'];
+      const availableItem = types.find((t) => !vehicle.documents!.some((d: any) => d.type === t));
+      if (vehicle.documents.some((d: any) => d.type === docType)) {
+        setDocType(availableItem || '');
+      }
+    }
+  }, [vehicle, docType]);
+
+  const uploadDocMutation = useMutation({
+    mutationFn: async () => {
+      if (!vehicle || !docFile) return;
+      if (!docExpiry) throw new Error('Data de expirare este obligatorie.');
+      const formData = new FormData();
+      formData.append('file', docFile);
+      formData.append('type', docType);
+      if (docExpiry) formData.append('expiryDate', docExpiry);
+
+      await api.post(`/vehicles/${vehicle.id}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    onSuccess: () => {
+      toast.success('Document incarcat cu succes');
+      queryClient.invalidateQueries({ queryKey: ['vehicles-by-category'] });
+      setDocFile(null);
+      setDocExpiry('');
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.error;
+      toast.error(msg || 'Eroare la incarcarea documentului');
+    },
+  });
+
+  const deleteDocMutation = useMutation({
+    mutationFn: async (docId: string) => {
+      await api.delete(`/vehicles/${vehicle!.id}/documents/${docId}`);
+    },
+    onSuccess: () => {
+      toast.success('Document sters cu succes');
+      queryClient.invalidateQueries({ queryKey: ['vehicles-by-category'] });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.error;
+      toast.error(msg || 'Eroare la stergerea documentului');
+    },
+  });
+
+  const handleDownload = (doc: VehicleDocument) => {
+    if (!doc.filePath || !api.defaults.baseURL) return;
+    const url = `${api.defaults.baseURL.replace('/api', '')}/${doc.filePath}`;
+    window.open(url, '_blank');
+  };
+
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -331,7 +387,7 @@ function VehicleModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit as any)}>
           <Tabs defaultValue="general" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="general">General</TabsTrigger>
@@ -517,23 +573,92 @@ function VehicleModal({
 
             {/* Tab: Documente */}
             <TabsContent value="documente" className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="itpExpiryDate">Data expirare ITP</Label>
-                <Input
-                  id="itpExpiryDate"
-                  type="date"
-                  {...register('itpExpiryDate')}
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="rcaExpiryDate">Data expirare RCA</Label>
-                <Input
-                  id="rcaExpiryDate"
-                  type="date"
-                  {...register('rcaExpiryDate')}
-                />
-              </div>
+              {vehicle ? (
+                <div className="mt-6 border-t pt-4">
+                  <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4" />
+                    Fisiere atasate
+                  </h4>
+                  
+                  {vehicle.documents && vehicle.documents.length > 0 ? (
+                    <div className="space-y-2 mb-6">
+                      {vehicle.documents.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 border rounded-md">
+                          <div>
+                            <p className="font-medium text-sm flex items-center gap-2">
+                              {doc.type}
+                              {doc.expiryDate && (
+                                <Badge variant="outline" className="text-xs">
+                                  Expira: {formatDate(doc.expiryDate)}
+                                </Badge>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{doc.fileName}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="button" variant="secondary" size="sm" onClick={() => handleDownload(doc)}>
+                              Download
+                            </Button>
+                            <Button type="button" variant="destructive" size="sm" onClick={() => deleteDocMutation.mutate(doc.id)} disabled={deleteDocMutation.isPending}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mb-6">Niciun document fisier atasat inca.</p>
+                  )}
+
+                  {/* Upload new document form */}
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-4 border">
+                    <h5 className="text-sm font-medium">Incarca un document nou</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Tip Document</Label>
+                        <Select value={docType} onValueChange={setDocType}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ITP" disabled={vehicle?.documents?.some((d: any) => d.type === 'ITP')}>ITP</SelectItem>
+                            <SelectItem value="RCA" disabled={vehicle?.documents?.some((d: any) => d.type === 'RCA')}>RCA</SelectItem>
+                            <SelectItem value="REGISTRATION" disabled={vehicle?.documents?.some((d: any) => d.type === 'REGISTRATION')}>Talon / Inmatriculare</SelectItem>
+                            <SelectItem value="INSURANCE" disabled={vehicle?.documents?.some((d: any) => d.type === 'INSURANCE')}>Asigurare Casco</SelectItem>
+                            <SelectItem value="OTHER" disabled={vehicle?.documents?.some((d: any) => d.type === 'OTHER')}>Altul</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Data Expirare (Obligatorie)</Label>
+                        <Input type="date" value={docExpiry} onChange={(e) => setDocExpiry(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Fisier (PDF/Imagine)</Label>
+                      <Input type="file" accept=".pdf,image/*" onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      disabled={!docFile || uploadDocMutation.isPending}
+                      onClick={() => uploadDocMutation.mutate()}
+                    >
+                      {uploadDocMutation.isPending && <Spinner className="mr-2" />}
+                      Incarca Fisier
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 border-t pt-4">
+                  <div className="p-4 bg-amber-500/10 text-amber-600 rounded-md flex gap-2 items-center text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Trebuie sa salvezi vehiculul mai intai pentru a putea adauga fisiere.</span>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
 
@@ -576,6 +701,7 @@ function CategoryModal({ open, onOpenChange, category }: CategoryModalProps) {
     reset,
     formState: { errors },
   } = useForm<CategoryFormValues>({
+    // @ts-ignore
     resolver: zodResolver(categorySchema),
     defaultValues: category
       ? { name: category.name, description: category.description ?? '' }
@@ -645,7 +771,7 @@ function CategoryModal({ open, onOpenChange, category }: CategoryModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="cat-name">Nume categorie</Label>
             <Input
@@ -757,6 +883,15 @@ export default function FleetPage() {
   });
 
   // --- Handlers ---
+  const activeVehicle = useMemo(() => {
+    if (!editingVehicle || !vehiclesByCategoryData) return editingVehicle;
+    for (const cat of vehiclesByCategoryData) {
+      const found = cat.vehicles.find((v) => v.id === editingVehicle.id);
+      if (found) return found;
+    }
+    return editingVehicle;
+  }, [editingVehicle, vehiclesByCategoryData]);
+
   const handleAddVehicle = (categoryId: string) => {
     setEditingVehicle(null);
     setVehicleDefaultCategoryId(categoryId);
@@ -1043,7 +1178,7 @@ export default function FleetPage() {
             setVehicleDefaultCategoryId(undefined);
           }
         }}
-        vehicle={editingVehicle}
+        vehicle={activeVehicle}
         defaultCategoryId={vehicleDefaultCategoryId}
       />
 
