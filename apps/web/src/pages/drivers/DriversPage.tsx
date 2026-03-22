@@ -307,11 +307,11 @@ function DocumentsTab({ driver }: { driver: Driver }) {
                 <Button type="button" variant="secondary" size="sm" onClick={() => handleDownload(doc)}>
                   Descarca
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={() => deleteDocMutation.mutate(doc.id)} 
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteDocMutation.mutate(doc.id)}
                   disabled={deleteDocMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -358,12 +358,12 @@ function DocumentsTab({ driver }: { driver: Driver }) {
         <div className="space-y-2">
           <Label>Fisier</Label>
           <div className="relative group">
-            <Input 
-              type="file" 
-              ref={fileInputRef} 
-              accept=".pdf,.jpg,.jpeg,.png" 
+            <Input
+              type="file"
+              ref={fileInputRef}
+              accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) => setDocFile(e.target.files?.[0] || null)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
             <div className="flex h-10 w-full rounded-md border border-input bg-background items-center justify-center text-sm text-muted-foreground px-3 group-hover:bg-accent group-hover:text-accent-foreground transition-colors duration-200">
               {docFile ? docFile.name : 'Niciun fisier selectat'}
@@ -900,15 +900,15 @@ export default function DriversPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-14">Nume Complet</TableHead>
-                    <TableHead className="text-center">Telefon</TableHead>
-                    <TableHead className="text-center">Email</TableHead>
+                    <TableHead className="pl-14 w-[20%]">Nume Complet</TableHead>
+                    <TableHead className="text-center w-[15%]">Telefon</TableHead>
+                    <TableHead className="text-center w-[15%]">Email</TableHead>
                     {user?.role !== 'AGENCY_MANAGER' && (
-                      <TableHead className="text-center">Agentie</TableHead>
+                      <TableHead className="text-center w-[20%]">Agentie</TableHead>
                     )}
-                    <TableHead className="text-center">Documente</TableHead>
-                    <TableHead className="text-center">Vehicule</TableHead>
-                    <TableHead className="text-center">Actiuni</TableHead>
+                    <TableHead className="text-center w-[10%]">Documente</TableHead>
+                    <TableHead className="text-center w-[10%]">Vehicule</TableHead>
+                    <TableHead className="text-center w-[10%]">Actiuni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

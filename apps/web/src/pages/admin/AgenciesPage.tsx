@@ -258,23 +258,23 @@ export default function AgenciesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nume</TableHead>
-                    <TableHead>Adresa</TableHead>
-                    <TableHead>Oras</TableHead>
-                    <TableHead className="text-center">Vehicule</TableHead>
-                    <TableHead className="text-center">Utilizatori</TableHead>
-                    <TableHead>Data Creare</TableHead>
-                    <TableHead className="text-right">Actiuni</TableHead>
+                    <TableHead className="text-center w-[20%]">Nume</TableHead>
+                    <TableHead className="text-center w-[20%]">Adresa</TableHead>
+                    <TableHead className="text-center w-[15%]">Oras</TableHead>
+                    <TableHead className="text-center w-[15%]">Vehicule</TableHead>
+                    <TableHead className="text-center w-[10%]">Utilizatori</TableHead>
+                    <TableHead className="text-center w-[10%]">Data Creare</TableHead>
+                    <TableHead className="text-center w-[10%]">Actiuni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {agencies.map((agency) => (
                     <TableRow key={agency.id} className="group hover:bg-muted/50 transition-all duration-150 border-l-2 border-l-transparent hover:border-l-primary">
-                      <TableCell className="font-medium">{agency.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="font-medium text-center">{agency.name}</TableCell>
+                      <TableCell className="text-muted-foreground text-center">
                         {agency.address || '-'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center">
                         {agency.city || '-'}
                       </TableCell>
                       <TableCell className="text-center">
@@ -283,11 +283,11 @@ export default function AgenciesPage() {
                       <TableCell className="text-center">
                         <Badge variant="secondary">{agency._count.users}</Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center">
                         {formatDate(agency.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"

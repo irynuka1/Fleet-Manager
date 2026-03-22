@@ -226,13 +226,13 @@ export default function UsersPage() {
     },
     values: editingUser
       ? {
-          firstName: editingUser.firstName,
-          lastName: editingUser.lastName,
-          email: editingUser.email,
-          password: '',
-          role: editingUser.role,
-          agencyId: editingUser.agencyId ?? '',
-        }
+        firstName: editingUser.firstName,
+        lastName: editingUser.lastName,
+        email: editingUser.email,
+        password: '',
+        role: editingUser.role,
+        agencyId: editingUser.agencyId ?? '',
+      }
       : undefined,
   });
 
@@ -376,36 +376,43 @@ export default function UsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nume</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Agentie</TableHead>
-                    <TableHead>Data Creare</TableHead>
-                    <TableHead className="text-right">Actiuni</TableHead>
+                    <TableHead className="pl-14 w-[20%] text-left">Nume</TableHead>
+                    <TableHead className="text-center w-[25%]">Email</TableHead>
+                    <TableHead className="text-center w-[15%]">Rol</TableHead>
+                    <TableHead className="text-center w-[15%]">Agentie</TableHead>
+                    <TableHead className="text-center w-[15%]">Data Creare</TableHead>
+                    <TableHead className="text-center w-[10%]">Actiuni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user.id} className="group hover:bg-muted/50 transition-all duration-150 border-l-2 border-l-transparent hover:border-l-primary">
-                      <TableCell className="font-medium">
-                        {user.firstName} {user.lastName}
+                      <TableCell className="font-medium pl-14 text-left">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-[11px] font-bold text-white shadow-sm shadow-teal-500/20">
+                            {user.firstName?.[0]}{user.lastName?.[0]}
+                          </div>
+                          <span>
+                            {user.firstName} {user.lastName}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center">
                         {user.email}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge variant="outline" className={ROLE_BADGE_STYLES[user.role]}>
                           {ROLE_LABELS[user.role]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center">
                         {user.agency?.name ?? '-'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-center">
                         {formatDate(user.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"

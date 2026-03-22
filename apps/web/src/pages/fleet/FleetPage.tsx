@@ -1117,15 +1117,15 @@ export default function FleetPage() {
                       <Table className="[&_td]:py-2 [&_th]:py-0">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="text-center">Nume</TableHead>
-                            <TableHead className="text-center">Nr. Inmatriculare</TableHead>
-                            <TableHead className="text-center">Tip Monitorizare</TableHead>
-                            <TableHead className="text-center">Km/Ore Curente</TableHead>
-                            <TableHead className="text-center">Prag Revizie</TableHead>
-                            <TableHead className="text-center">ITP</TableHead>
-                            <TableHead className="text-center">RCA</TableHead>
-                            <TableHead className="text-center">Soferi</TableHead>
-                            <TableHead className="text-center">Actiuni</TableHead>
+                            <TableHead className="text-center w-[15%]">Nume</TableHead>
+                            <TableHead className="text-center w-[15%]">Nr. Inmatriculare</TableHead>
+                            <TableHead className="text-center w-[10%]">Tip Monitorizare</TableHead>
+                            <TableHead className="text-center w-[12%]">Km/Ore Curente</TableHead>
+                            <TableHead className="text-center w-[12%]">Prag Revizie</TableHead>
+                            <TableHead className="text-center w-[8%]">ITP</TableHead>
+                            <TableHead className="text-center w-[8%]">RCA</TableHead>
+                            <TableHead className="text-center w-[10%]">Soferi</TableHead>
+                            <TableHead className="text-center w-[10%]">Actiuni</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
