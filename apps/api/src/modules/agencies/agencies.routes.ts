@@ -29,21 +29,21 @@ router.get(
 
 router.post(
   '/',
-  authorize('SUPER_ADMIN'),
+  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER'),
   validate(createAgencySchema),
   agenciesController.create,
 );
 
 router.put(
   '/:id',
-  authorize('SUPER_ADMIN'),
+  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER'),
   validate(updateAgencySchema),
   agenciesController.update,
 );
 
 router.delete(
   '/:id',
-  authorize('SUPER_ADMIN'),
+  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER'),
   agenciesController.delete,
 );
 

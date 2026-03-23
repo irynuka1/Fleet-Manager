@@ -18,7 +18,7 @@ const mainNavigation = [
 ];
 
 const adminNavigation = [
-  { name: 'Agentii', href: '/admin/agencies', icon: Building2, roles: ['SUPER_ADMIN'] },
+  { name: 'Agentii', href: '/admin/agencies', icon: Building2, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER'] },
   { name: 'Utilizatori', href: '/admin/users', icon: UserCog, roles: ['SUPER_ADMIN'] },
 ];
 

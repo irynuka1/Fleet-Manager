@@ -42,7 +42,7 @@ function AppContent() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/fleet" element={<FleetPage />} />
           <Route path="/drivers" element={<DriversPage />} />
-          <Route path="/admin/agencies" element={<RequireRole roles={['SUPER_ADMIN']}><AgenciesPage /></RequireRole>} />
+          <Route path="/admin/agencies" element={<RequireRole roles={['SUPER_ADMIN', 'COUNTRY_MANAGER']}><AgenciesPage /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole roles={['SUPER_ADMIN']}><UsersPage /></RequireRole>} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
