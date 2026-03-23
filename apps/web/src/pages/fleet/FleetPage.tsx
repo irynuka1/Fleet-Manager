@@ -970,10 +970,25 @@ export default function FleetPage() {
     setCategoryModalOpen(true);
   };
 
-  // Compute default open accordion items so all categories start expanded
+  // Sort categories: those with vehicles first
+  const sortedCategories = useMemo(() => {
+    if (!vehiclesByCategoryData) return [];
+    return [...vehiclesByCategoryData].sort((a, b) => {
+      const aEmpty = a.vehicles.length === 0;
+      const bEmpty = b.vehicles.length === 0;
+      if (aEmpty && !bEmpty) return 1;
+      if (!aEmpty && bEmpty) return -1;
+      return a.category.name.localeCompare(b.category.name);
+    });
+  }, [vehiclesByCategoryData]);
+
+  // Compute default open accordion items so only populated categories start expanded
   const defaultAccordionValues = useMemo(
-    () => vehiclesByCategoryData?.map((g) => g.category.id) ?? [],
-    [vehiclesByCategoryData]
+    () =>
+      sortedCategories
+        .filter((g) => g.vehicles.length > 0)
+        .map((g) => g.category.id),
+    [sortedCategories]
   );
 
   // --- Render ---
@@ -1031,14 +1046,14 @@ export default function FleetPage() {
       {/* Categories accordion */}
       {!isLoading &&
         !isError &&
-        vehiclesByCategoryData &&
-        vehiclesByCategoryData.length > 0 && (
+        sortedCategories &&
+        sortedCategories.length > 0 && (
           <Accordion
             type="multiple"
             defaultValue={defaultAccordionValues}
             className="space-y-2"
           >
-            {vehiclesByCategoryData.map(({ category, vehicles }) => (
+            {sortedCategories.map(({ category, vehicles }) => (
               <AccordionItem
                 key={category.id}
                 value={category.id}

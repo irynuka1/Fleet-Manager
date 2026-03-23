@@ -61,7 +61,7 @@ router.put(
 
 router.delete(
   '/:id',
-  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER'),
+  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'),
   driversController.delete,
 );
 
