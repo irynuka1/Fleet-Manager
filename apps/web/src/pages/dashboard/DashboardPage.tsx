@@ -89,14 +89,14 @@ export default function DashboardPage() {
     },
     ...(user?.role === 'SUPER_ADMIN'
       ? [
-          {
-            label: 'Management Utilizatori',
-            description: 'Administreaza utilizatorii sistemului',
-            href: '/admin/users',
-            icon: UserCog,
-            secondaryIcon: null,
-          },
-        ]
+        {
+          label: 'Management Utilizatori',
+          description: 'Administreaza utilizatorii sistemului',
+          href: '/admin/users',
+          icon: UserCog,
+          secondaryIcon: null,
+        },
+      ]
       : []),
   ];
 
@@ -131,7 +131,7 @@ export default function DashboardPage() {
       {isStatsLoading ? (
         <StatsSkeleton count={showAgencies ? 3 : 2} />
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${showAgencies ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
           <StatsCard
             title="Vehicule"
             value={vehiclesData?.total ?? '-'}

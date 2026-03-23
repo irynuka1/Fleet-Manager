@@ -13,7 +13,7 @@ import DriversPage from '@/pages/drivers/DriversPage';
 import AgenciesPage from '@/pages/admin/AgenciesPage';
 import UsersPage from '@/pages/admin/UsersPage';
 
-export const queryClient = new QueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
@@ -47,7 +47,7 @@ function AppContent() {
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="bottom-right" />
     </BrowserRouter>
   );
 }
