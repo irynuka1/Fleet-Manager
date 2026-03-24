@@ -335,8 +335,8 @@ function DocumentsTab({ driver }: { driver: Driver }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="DRIVING_LICENSE">Permis Conducere</SelectItem>
-                <SelectItem value="MEDICAL_CERTIFICATE">Fisa Medicala</SelectItem>
+                <SelectItem value="DRIVING_LICENSE" disabled={driver.documents.some((d: any) => d.type === 'DRIVING_LICENSE')}>Permis Conducere</SelectItem>
+                <SelectItem value="MEDICAL_CERTIFICATE" disabled={driver.documents.some((d: any) => d.type === 'MEDICAL_CERTIFICATE')}>Fisa Medicala</SelectItem>
               </SelectContent>
             </Select>
           </div>
