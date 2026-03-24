@@ -13,7 +13,7 @@ import DriversPage from '@/pages/drivers/DriversPage';
 import AgenciesPage from '@/pages/admin/AgenciesPage';
 import UsersPage from '@/pages/admin/UsersPage';
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
