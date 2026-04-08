@@ -12,6 +12,7 @@ import FleetPage from '@/pages/fleet/FleetPage';
 import DriversPage from '@/pages/drivers/DriversPage';
 import AgenciesPage from '@/pages/admin/AgenciesPage';
 import UsersPage from '@/pages/admin/UsersPage';
+import NotificationsPage from '@/pages/notifications/NotificationsPage';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ function AppContent() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/fleet" element={<FleetPage />} />
           <Route path="/drivers" element={<DriversPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/admin/agencies" element={<RequireRole roles={['SUPER_ADMIN', 'COUNTRY_MANAGER']}><AgenciesPage /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole roles={['SUPER_ADMIN']}><UsersPage /></RequireRole>} />
         </Route>

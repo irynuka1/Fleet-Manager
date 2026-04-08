@@ -1,7 +1,8 @@
-import { Moon, Sun, LogOut, Bell, Menu } from 'lucide-react';
+import { Moon, Sun, LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Button } from '@/components/ui/button';
+import NotificationPanel from './NotificationPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,14 +46,7 @@ export default function Header() {
       {/* Right side controls */}
       <div className="flex items-center gap-2">
         {/* Notification Bell */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-lg transition-colors duration-200 hover:bg-accent"
-          aria-label="Notificari"
-        >
-          <Bell className="h-[18px] w-[18px] text-muted-foreground" />
-        </Button>
+        <NotificationPanel />
 
         {/* Theme Toggle */}
         <Button

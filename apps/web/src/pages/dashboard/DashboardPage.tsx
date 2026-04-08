@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Truck,
   Users,
@@ -7,13 +7,18 @@ import {
   Plus,
   LayoutList,
   UserCog,
+  Bell,
   Zap,
   CheckCircle2,
   Clock,
   Circle,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatsCard } from '@/components/shared/StatsCard';
@@ -22,6 +27,22 @@ import api from '@/lib/api';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const triggerAlertCheck = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/notifications/check');
+      return data.data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Verificare completa: ${data.created} alerte noi create`);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || 'Eroare la verificarea alertelor');
+    },
+  });
 
   const { data: vehiclesData, isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles-stats'],
@@ -87,6 +108,13 @@ export default function DashboardPage() {
       icon: LayoutList,
       secondaryIcon: null,
     },
+    {
+      label: 'Notificari',
+      description: 'Vezi alertele de documente si revizii',
+      href: '/notifications',
+      icon: Bell,
+      secondaryIcon: null,
+    },
     ...(user?.role === 'SUPER_ADMIN'
       ? [
         {
@@ -108,12 +136,12 @@ export default function DashboardPage() {
     },
     {
       label: 'Sprint 2: Alerte ITP/RCA + Notificari',
-      status: 'in-progress' as const,
-      badge: false,
+      status: 'done' as const,
+      badge: true,
     },
     {
       label: 'Sprint 3: Harta Live GPS + Playback',
-      status: 'upcoming' as const,
+      status: 'in-progress' as const,
       badge: false,
     },
   ];
@@ -125,7 +153,23 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description={descriptionText}
-      />
+      >
+        {user?.role === 'SUPER_ADMIN' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => triggerAlertCheck.mutate()}
+            disabled={triggerAlertCheck.isPending}
+          >
+            {triggerAlertCheck.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="mr-2 h-4 w-4" />
+            )}
+            Verifica Alerte
+          </Button>
+        )}
+      </PageHeader>
 
       {/* Stats Section */}
       {isStatsLoading ? (

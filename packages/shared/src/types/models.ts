@@ -112,3 +112,27 @@ export interface DriverVehicle {
   vehicle?: Vehicle;
   createdAt: string;
 }
+
+export enum NotificationType {
+  ITP_EXPIRING = 'ITP_EXPIRING',
+  RCA_EXPIRING = 'RCA_EXPIRING',
+  REVISION_DUE = 'REVISION_DUE',
+  DRIVER_LICENSE_EXPIRING = 'DRIVER_LICENSE_EXPIRING',
+  DRIVER_MEDICAL_EXPIRING = 'DRIVER_MEDICAL_EXPIRING',
+}
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  vehicleId: string | null;
+  vehicle?: Vehicle;
+  driverId: string | null;
+  driver?: Driver;
+  agencyId: string;
+  agency?: Agency;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

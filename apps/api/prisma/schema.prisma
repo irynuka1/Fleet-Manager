@@ -31,6 +31,14 @@ enum VehicleDocumentType {
   OTHER
 }
 
+enum NotificationType {
+  ITP_EXPIRING
+  RCA_EXPIRING
+  REVISION_DUE
+  DRIVER_LICENSE_EXPIRING
+  DRIVER_MEDICAL_EXPIRING
+}
+
 // ─── Utilizatori si Autentificare ────────────────────────────────
 
 model User {
@@ -67,11 +75,12 @@ model Agency {
   name      String
   address   String?
   city      String?
-  users     User[]
-  vehicles  Vehicle[]
-  drivers   Driver[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  users         User[]
+  vehicles      Vehicle[]
+  drivers       Driver[]
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@map("agencies")
 }
@@ -107,6 +116,7 @@ model Vehicle {
   rcaExpiryDate     DateTime?
   drivers           DriverVehicle[]
   documents         VehicleDocument[]
+  notifications     Notification[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -123,10 +133,11 @@ model Driver {
   email     String?
   agency    Agency           @relation(fields: [agencyId], references: [id])
   agencyId  String
-  vehicles  DriverVehicle[]
-  documents DriverDocument[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  vehicles      DriverVehicle[]
+  documents     DriverDocument[]
+  notifications Notification[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@map("drivers")
 }
@@ -171,4 +182,26 @@ model DriverVehicle {
 
   @@unique([driverId, vehicleId])
   @@map("driver_vehicles")
+}
+
+// ─── Notificari / Alerte ─────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  vehicle   Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId String?
+  driver    Driver?          @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driverId  String?
+  agency    Agency           @relation(fields: [agencyId], references: [id])
+  agencyId  String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([agencyId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

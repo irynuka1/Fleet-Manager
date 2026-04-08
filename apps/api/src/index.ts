@@ -13,6 +13,8 @@ import agencyRoutes from './modules/agencies/agencies.routes';
 import categoryRoutes from './modules/categories/categories.routes';
 import vehicleRoutes from './modules/vehicles/vehicles.routes';
 import driverRoutes from './modules/drivers/drivers.routes';
+import notificationRoutes from './modules/notifications/notifications.routes';
+import { setupCronJobs } from './services/cronJobs';
 
 const app = express();
 
@@ -27,6 +29,7 @@ app.use('/api/agencies', agencyRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -79,6 +82,7 @@ app.use(errorHandler);
 app.listen(env.PORT, () => {
   console.log(`[OmniKinetix API] Server pornit pe http://localhost:${env.PORT}`);
   console.log(`[OmniKinetix API] Mediu: ${env.NODE_ENV}`);
+  setupCronJobs();
 });
 
 export default app;
