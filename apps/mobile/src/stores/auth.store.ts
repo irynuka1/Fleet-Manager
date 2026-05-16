@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import api from '../lib/api';
 
-interface AuthUser {
+export type UserRole = 'SUPER_ADMIN' | 'COUNTRY_MANAGER' | 'AGENCY_MANAGER';
+
+export interface AuthUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role: 'SUPER_ADMIN' | 'COUNTRY_MANAGER' | 'AGENCY_MANAGER';
+  role: UserRole;
   agencyId: string | null;
   agency?: { id: string; name: string } | null;
 }
@@ -16,9 +18,12 @@ interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   initialize: () => Promise<void>;
+  /** Wipe local session without hitting the server (used by the API interceptor). */
+  clearSession: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -39,13 +44,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (refreshToken) {
         await api.post('/auth/logout', { refreshToken });
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Server-side logout failed:', err);
     } finally {
       await SecureStore.deleteItemAsync('accessToken');
       await SecureStore.deleteItemAsync('refreshToken');
       set({ user: null, isAuthenticated: false });
     }
+  },
+
+  clearSession: async () => {
+    await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('refreshToken');
+    set({ user: null, isAuthenticated: false, isLoading: false });
   },
 
   initialize: async () => {

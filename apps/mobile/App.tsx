@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from './src/stores/auth.store';
+import { colors } from './src/lib/colors';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
@@ -18,17 +19,18 @@ type Tab = 'dashboard' | 'notifications';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
-      {/* Screen */}
-      <View style={styles.screen}>
-        {activeTab === 'dashboard' && <DashboardScreen />}
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        {activeTab === 'dashboard' && (
+          <DashboardScreen onNavigateToNotifications={() => setActiveTab('notifications')} />
+        )}
         {activeTab === 'notifications' && <NotificationsScreen />}
       </View>
 
-      {/* Tab Bar */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity
           style={styles.tab}
           onPress={() => setActiveTab('dashboard')}
@@ -37,7 +39,7 @@ function MainApp() {
           <Ionicons
             name={activeTab === 'dashboard' ? 'grid' : 'grid-outline'}
             size={22}
-            color={activeTab === 'dashboard' ? '#0d9488' : '#94a3b8'}
+            color={activeTab === 'dashboard' ? colors.primary : colors.textMuted}
           />
           <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>
             Dashboard
@@ -51,7 +53,7 @@ function MainApp() {
           <Ionicons
             name={activeTab === 'notifications' ? 'notifications' : 'notifications-outline'}
             size={22}
-            color={activeTab === 'notifications' ? '#0d9488' : '#94a3b8'}
+            color={activeTab === 'notifications' ? colors.primary : colors.textMuted}
           />
           <Text style={[styles.tabLabel, activeTab === 'notifications' && styles.tabLabelActive]}>
             Notificari
@@ -69,13 +71,13 @@ export default function App() {
 
   useEffect(() => {
     initialize();
-  }, []);
+  }, [initialize]);
 
   if (isLoading) {
     return (
       <SafeAreaProvider>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0d9488" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaProvider>
     );
@@ -91,24 +93,22 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   screen: {
     flex: 1,
-    paddingTop: 50,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    paddingBottom: 20,
+    borderTopColor: colors.border,
     paddingTop: 8,
   },
   tab: {
@@ -120,9 +120,9 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
   tabLabelActive: {
-    color: '#0d9488',
+    color: colors.primary,
   },
 });

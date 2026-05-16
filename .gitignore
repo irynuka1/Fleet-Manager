@@ -5,6 +5,7 @@ build/
 .env.local
 *.log
 .DS_Store
+.expo/
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
 docker-compose.yml

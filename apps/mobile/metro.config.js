@@ -13,16 +13,22 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// Block the hoisted react-native@0.85 and react@19 at the workspace root
-// so Metro always picks the app-local versions (react-native@0.76, react@18).
-function escapeForRegex(p) {
-  return path.resolve(workspaceRoot, 'node_modules', p).replace(/[/\\]/g, '[/\\\\]');
+// The web app hoists different versions of react and react-native at the
+// workspace root. Block them so Metro always resolves the mobile-local copies.
+function escapeForRegex(moduleName) {
+  return path
+    .resolve(workspaceRoot, 'node_modules', moduleName)
+    .replace(/[/\\]/g, '[/\\\\]');
 }
 
+const existing = Array.isArray(config.resolver.blockList)
+  ? config.resolver.blockList
+  : [];
+
 config.resolver.blockList = [
-  ...(Array.isArray(config.resolver.blockList) ? config.resolver.blockList : []),
-  new RegExp(escapeForRegex('react-native') + '[/\\\\].*'),
-  new RegExp(escapeForRegex('react') + '[/\\\\].*'),
+  ...existing,
+  new RegExp(`${escapeForRegex('react-native')}[/\\\\].*`),
+  new RegExp(`${escapeForRegex('react')}[/\\\\].*`),
 ];
 
 module.exports = config;

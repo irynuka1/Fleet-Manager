@@ -25,12 +25,26 @@ interface Notification {
   createdAt: string;
 }
 
+type FilterValue = 'all' | 'unread' | 'read';
+
+interface NotificationParams {
+  page: number;
+  limit: number;
+  isRead?: string;
+}
+
 const typeConfig: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
   ITP_EXPIRING: { icon: 'document-text', color: colors.itpExpiring },
   RCA_EXPIRING: { icon: 'shield', color: colors.rcaExpiring },
   REVISION_DUE: { icon: 'construct', color: colors.revisionDue },
   DRIVER_LICENSE_EXPIRING: { icon: 'card', color: colors.licenseExpiring },
   DRIVER_MEDICAL_EXPIRING: { icon: 'heart', color: colors.medicalExpiring },
+};
+
+const FILTER_LABELS: Record<FilterValue, string> = {
+  all: 'Toate',
+  unread: 'Necitite',
+  read: 'Citite',
 };
 
 function timeAgo(dateStr: string): string {
@@ -51,23 +65,23 @@ export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [filter, setFilter] = useState<FilterValue>('all');
 
   const fetchNotifications = useCallback(async (p = 1, refresh = false) => {
     try {
       if (refresh) setRefreshing(true);
       else if (p === 1) setLoading(true);
 
-      const params: any = { page: p, limit: 20 };
+      const params: NotificationParams = { page: p, limit: 20 };
       if (filter === 'unread') params.isRead = 'false';
       if (filter === 'read') params.isRead = 'true';
 
       const { data } = await api.get('/notifications', { params });
-      setNotifications(p === 1 ? data.data : [...notifications, ...data.data]);
+      setNotifications((prev) => (p === 1 ? data.data : [...prev, ...data.data]));
       setTotalPages(data.totalPages);
       setPage(p);
     } catch (err) {
-      console.error('Failed to fetch notifications', err);
+      console.warn('Failed to fetch notifications:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -76,16 +90,16 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     fetchNotifications(1);
-  }, [filter]);
+  }, [fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
       );
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to mark notification as read:', err);
     }
   };
 
@@ -93,13 +107,13 @@ export default function NotificationsScreen() {
     try {
       await api.put('/notifications/read-all');
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to mark all notifications as read:', err);
     }
   };
 
   const renderNotification = ({ item }: { item: Notification }) => {
-    const config = typeConfig[item.type] || { icon: 'notifications', color: colors.textMuted };
+    const config = typeConfig[item.type] ?? { icon: 'notifications' as const, color: colors.textMuted };
 
     return (
       <TouchableOpacity
@@ -142,7 +156,6 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notificari</Text>
         {hasUnread && (
@@ -152,7 +165,6 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      {/* Filters */}
       <View style={styles.filters}>
         {(['all', 'unread', 'read'] as const).map((f) => (
           <TouchableOpacity
@@ -161,13 +173,12 @@ export default function NotificationsScreen() {
             onPress={() => setFilter(f)}
           >
             <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-              {f === 'all' ? 'Toate' : f === 'unread' ? 'Necitite' : 'Citite'}
+              {FILTER_LABELS[f]}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* List */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />

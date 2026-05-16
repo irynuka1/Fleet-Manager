@@ -12,6 +12,10 @@ import { useAuthStore } from '../stores/auth.store';
 import api from '../lib/api';
 import { colors } from '../lib/colors';
 
+interface DashboardScreenProps {
+  onNavigateToNotifications: () => void;
+}
+
 interface Stats {
   vehicles: number;
   drivers: number;
@@ -23,7 +27,7 @@ const roleLabels: Record<string, string> = {
   AGENCY_MANAGER: 'Manager de Agentie',
 };
 
-export default function DashboardScreen() {
+export default function DashboardScreen({ onNavigateToNotifications }: DashboardScreenProps) {
   const { user, logout } = useAuthStore();
   const [stats, setStats] = useState<Stats>({ vehicles: 0, drivers: 0 });
   const [unreadCount, setUnreadCount] = useState(0);
@@ -41,8 +45,8 @@ export default function DashboardScreen() {
         drivers: driversRes.data.total || 0,
       });
       setUnreadCount(notifRes.data.data?.count || 0);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to fetch dashboard data:', err);
     }
   };
 
@@ -64,7 +68,6 @@ export default function DashboardScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
-      {/* Welcome */}
       <View style={styles.welcomeCard}>
         <View style={styles.welcomeTop}>
           <View>
@@ -81,7 +84,6 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Stats */}
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { borderLeftColor: colors.primary }]}>
           <View style={[styles.statIcon, { backgroundColor: colors.primary + '15' }]}>
@@ -99,10 +101,15 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Alerts summary */}
-      <TouchableOpacity style={styles.alertCard} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.alertCard}
+        activeOpacity={0.7}
+        onPress={onNavigateToNotifications}
+      >
         <View style={styles.alertLeft}>
-          <View style={[styles.alertIcon, { backgroundColor: unreadCount > 0 ? colors.warning + '20' : colors.success + '20' }]}>
+          <View style={[styles.alertIcon, {
+            backgroundColor: unreadCount > 0 ? colors.warning + '20' : colors.success + '20',
+          }]}>
             <Ionicons
               name={unreadCount > 0 ? 'warning' : 'checkmark-circle'}
               size={24}

@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../stores/auth.store';
 import { colors } from '../lib/colors';
@@ -28,8 +29,12 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Email sau parola incorecta');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error ?? 'Email sau parola incorecta');
+      } else {
+        setError('Email sau parola incorecta');
+      }
     } finally {
       setLoading(false);
     }
@@ -41,7 +46,6 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
             <Ionicons name="shield-checkmark" size={32} color="#fff" />
@@ -50,7 +54,6 @@ export default function LoginScreen() {
           <Text style={styles.logoSubtext}>Management Flota Auto</Text>
         </View>
 
-        {/* Form */}
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Autentificare</Text>
           <Text style={styles.formSubtitle}>Introduceti datele de acces</Text>
@@ -111,7 +114,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Demo accounts */}
         <View style={styles.demoBox}>
           <Text style={styles.demoTitle}>Conturi demo</Text>
           <Text style={styles.demoText}>admin@omnikininetix.ro</Text>
