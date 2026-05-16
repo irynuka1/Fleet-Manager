@@ -1,8 +1,9 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// Change this to your server IP when testing on a real device
-const API_URL = 'http://localhost:3001/api';
+// Use your machine's LAN IP so the phone can reach the API server.
+// Update this if your IP changes.
+const API_URL = 'http://10.49.224.161:3001/api';
 
 const api = axios.create({
   baseURL: API_URL,
