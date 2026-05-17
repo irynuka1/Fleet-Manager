@@ -138,14 +138,14 @@ function VehicleMarkerInner({ position: p, online, onSelect }: VehicleMarkerProp
       <Popup>
         <div className="min-w-[180px] space-y-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-semibold text-gray-900">
               {p.vehicle?.name ?? 'Vehicul'}
             </p>
             <span
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
                 online
-                  ? 'bg-teal-500/10 text-teal-600'
+                  ? 'bg-teal-500/10 text-teal-700'
                   : 'bg-gray-200 text-gray-600'
               )}
             >
@@ -158,19 +158,19 @@ function VehicleMarkerInner({ position: p, online, onSelect }: VehicleMarkerProp
               {online ? 'Online' : 'Offline'}
             </span>
           </div>
-          <p className="font-mono text-xs text-muted-foreground">
+          <p className="font-mono text-xs text-gray-500">
             {p.vehicle?.plateNumber ?? '-'}
           </p>
           <div className="space-y-1 pt-1 text-xs">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Viteza</span>
-              <span className="font-medium text-foreground">
+              <span className="text-gray-500">Viteza</span>
+              <span className="font-medium text-gray-900">
                 {Math.round(p.speed ?? 0)} km/h
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Actualizat</span>
-              <span className="font-medium text-foreground">
+              <span className="text-gray-500">Actualizat</span>
+              <span className="font-medium text-gray-900">
                 {timeAgo(p.updatedAt)}
               </span>
             </div>

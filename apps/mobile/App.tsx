@@ -14,8 +14,9 @@ import { colors } from './src/lib/colors';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import LiveMapScreen from './src/screens/LiveMapScreen';
 
-type Tab = 'dashboard' | 'notifications';
+type Tab = 'dashboard' | 'live-map' | 'notifications';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -27,6 +28,7 @@ function MainApp() {
         {activeTab === 'dashboard' && (
           <DashboardScreen onNavigateToNotifications={() => setActiveTab('notifications')} />
         )}
+        {activeTab === 'live-map' && <LiveMapScreen />}
         {activeTab === 'notifications' && <NotificationsScreen />}
       </View>
 
@@ -43,6 +45,20 @@ function MainApp() {
           />
           <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>
             Dashboard
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tab}
+          onPress={() => setActiveTab('live-map')}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'live-map' ? 'map' : 'map-outline'}
+            size={22}
+            color={activeTab === 'live-map' ? colors.primary : colors.textMuted}
+          />
+          <Text style={[styles.tabLabel, activeTab === 'live-map' && styles.tabLabelActive]}>
+            Harta Live
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
