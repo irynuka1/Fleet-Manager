@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import http from 'http';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticate } from './middleware/auth';
@@ -14,7 +15,9 @@ import categoryRoutes from './modules/categories/categories.routes';
 import vehicleRoutes from './modules/vehicles/vehicles.routes';
 import driverRoutes from './modules/drivers/drivers.routes';
 import notificationRoutes from './modules/notifications/notifications.routes';
+import telemetryRoutes from './modules/telemetry/telemetry.routes';
 import { setupCronJobs } from './services/cronJobs';
+import { setupSocketServer } from './services/socketServer';
 
 const app = express();
 
@@ -30,6 +33,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/telemetry', telemetryRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -79,7 +83,11 @@ app.get('/api/uploads/:filename', authenticate, async (req, res, next) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
+// Create HTTP server so we can attach Socket.io on the same port
+const httpServer = http.createServer(app);
+setupSocketServer(httpServer);
+
+httpServer.listen(env.PORT, () => {
   console.log(`[OmniKinetix API] Server pornit pe http://localhost:${env.PORT}`);
   console.log(`[OmniKinetix API] Mediu: ${env.NODE_ENV}`);
   setupCronJobs();

@@ -7,6 +7,8 @@ import {
   Building2,
   UserCog,
   Shield,
+  MapPin,
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -16,6 +18,8 @@ const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'] },
   { name: 'Flota', href: '/fleet', icon: Truck, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'] },
   { name: 'Soferi', href: '/drivers', icon: Users, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'] },
+  { name: 'Harta Live', href: '/live-map', icon: MapPin, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'] },
+  { name: 'Playback', href: '/playback', icon: History, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'] },
   { name: 'Notificari', href: '/notifications', icon: Bell, roles: ['SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'] },
 ];
 

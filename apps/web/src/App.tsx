@@ -13,6 +13,8 @@ import DriversPage from '@/pages/drivers/DriversPage';
 import AgenciesPage from '@/pages/admin/AgenciesPage';
 import UsersPage from '@/pages/admin/UsersPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
+import LiveMapPage from '@/pages/live-map/LiveMapPage';
+import PlaybackPage from '@/pages/playback/PlaybackPage';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +46,8 @@ function AppContent() {
           <Route path="/fleet" element={<FleetPage />} />
           <Route path="/drivers" element={<DriversPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/live-map" element={<LiveMapPage />} />
+          <Route path="/playback" element={<PlaybackPage />} />
           <Route path="/admin/agencies" element={<RequireRole roles={['SUPER_ADMIN', 'COUNTRY_MANAGER']}><AgenciesPage /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole roles={['SUPER_ADMIN']}><UsersPage /></RequireRole>} />
         </Route>
