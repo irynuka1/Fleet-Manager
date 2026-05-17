@@ -9,11 +9,15 @@ import {
   UserCog,
   Bell,
   Zap,
-  CheckCircle2,
-  Clock,
-  Circle,
   Loader2,
   ShieldCheck,
+  Activity,
+  MapPin,
+  FileWarning,
+  Wrench,
+  IdCard,
+  HeartPulse,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -128,21 +132,81 @@ export default function DashboardPage() {
       : []),
   ];
 
-  const timeline = [
+  const { data: countData } = useQuery({
+    queryKey: ['notifications-count'],
+    queryFn: async () => {
+      const { data } = await api.get('/notifications/count');
+      return data as { success: boolean; data: { count: number } };
+    },
+  });
+  const unreadCount = countData?.data?.count ?? 0;
+
+  const { data: livePositions } = useQuery({
+    queryKey: ['telemetry-live-stats'],
+    queryFn: async () => {
+      const { data } = await api.get('/telemetry/live');
+      return data.data as { vehicleId: string; updatedAt: string }[];
+    },
+    refetchInterval: 60_000,
+  });
+
+  const { data: recentAlerts } = useQuery({
+    queryKey: ['notifications-recent'],
+    queryFn: async () => {
+      const { data } = await api.get('/notifications', {
+        params: { limit: 100, isRead: 'false' },
+      });
+      return data.data as { id: string; type: string }[];
+    },
+  });
+
+  const gpsOnline = (livePositions ?? []).filter(
+    (p) => Date.now() - new Date(p.updatedAt).getTime() < 5 * 60 * 1000
+  ).length;
+
+  const alertsByType = (recentAlerts ?? []).reduce<Record<string, number>>(
+    (acc, n) => {
+      acc[n.type] = (acc[n.type] ?? 0) + 1;
+      return acc;
+    },
+    {}
+  );
+
+  const fleetHealthItems = [
     {
-      label: 'Sprint 1 Complet',
-      status: 'done' as const,
-      badge: true,
+      label: 'ITP Expira',
+      count: alertsByType['ITP_EXPIRING'] ?? 0,
+      icon: FileWarning,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10',
     },
     {
-      label: 'Sprint 2: Alerte ITP/RCA + Notificari',
-      status: 'done' as const,
-      badge: true,
+      label: 'RCA Expira',
+      count: alertsByType['RCA_EXPIRING'] ?? 0,
+      icon: ShieldAlert,
+      color: 'text-red-500',
+      bg: 'bg-red-500/10',
     },
     {
-      label: 'Sprint 3: Harta Live GPS + Playback',
-      status: 'in-progress' as const,
-      badge: false,
+      label: 'Revizie Necesara',
+      count: alertsByType['REVISION_DUE'] ?? 0,
+      icon: Wrench,
+      color: 'text-teal-500',
+      bg: 'bg-teal-500/10',
+    },
+    {
+      label: 'Permis Expira',
+      count: alertsByType['DRIVER_LICENSE_EXPIRING'] ?? 0,
+      icon: IdCard,
+      color: 'text-purple-500',
+      bg: 'bg-purple-500/10',
+    },
+    {
+      label: 'Fisa Medicala',
+      count: alertsByType['DRIVER_MEDICAL_EXPIRING'] ?? 0,
+      icon: HeartPulse,
+      color: 'text-pink-500',
+      bg: 'bg-pink-500/10',
     },
   ];
 
@@ -252,59 +316,69 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* System Info */}
+        {/* Fleet Health */}
         <Card className="animate-fade-in-up stagger-5">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
-                <Clock className="h-4 w-4 text-amber-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10">
+                <Activity className="h-4 w-4 text-teal-500" />
               </div>
-              Informatii Sistem
+              Stare Flota
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="relative space-y-0">
-              {timeline.map((item, index) => (
-                <div key={item.label} className="relative flex gap-4 pb-6 last:pb-0">
-                  {/* Vertical connector line */}
-                  {index < timeline.length - 1 && (
-                    <div className="absolute left-[11px] top-6 h-full w-px bg-border" />
-                  )}
-                  {/* Dot indicator */}
-                  <div className="relative z-10 mt-0.5 shrink-0">
-                    {item.status === 'done' ? (
-                      <CheckCircle2 className="h-6 w-6 text-green-500" />
-                    ) : item.status === 'in-progress' ? (
-                      <div className="flex h-6 w-6 items-center justify-center">
-                        <div className="h-3 w-3 rounded-full border-2 border-teal-500 bg-teal-500/20" />
-                      </div>
-                    ) : (
-                      <div className="flex h-6 w-6 items-center justify-center">
-                        <Circle className="h-3 w-3 text-muted-foreground/40" />
-                      </div>
-                    )}
-                  </div>
-                  {/* Content */}
-                  <div className="flex flex-1 items-center gap-2 pt-0.5">
-                    <span
-                      className={
-                        item.status === 'done'
-                          ? 'text-sm font-semibold text-foreground'
-                          : item.status === 'in-progress'
-                            ? 'text-sm font-medium text-foreground/80'
-                            : 'text-sm text-muted-foreground'
-                      }
-                    >
-                      {item.label}
-                    </span>
-                    {item.badge && (
-                      <Badge variant="secondary" className="text-xs">
-                        Complet
-                      </Badge>
-                    )}
-                  </div>
+          <CardContent className="space-y-5">
+            {/* GPS + Alerts summary */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                to="/live-map"
+                className="group flex items-center gap-3 rounded-lg border border-border/50 p-3 transition-all hover:border-border hover:bg-muted/50"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-500/10">
+                  <MapPin className="h-4 w-4 text-teal-500" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-xl font-bold text-foreground">{gpsOnline}</p>
+                  <p className="text-[11px] text-muted-foreground">GPS Online</p>
+                </div>
+              </Link>
+              <Link
+                to="/notifications"
+                className="group flex items-center gap-3 rounded-lg border border-border/50 p-3 transition-all hover:border-border hover:bg-muted/50"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+                  <Bell className="h-4 w-4 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-foreground">{unreadCount ?? 0}</p>
+                  <p className="text-[11px] text-muted-foreground">Alerte Active</p>
+                </div>
+              </Link>
+            </div>
+
+            {/* Alert breakdown by type */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Distributie Alerte
+              </p>
+              <div className="space-y-1.5">
+                {fleetHealthItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-3 rounded-lg px-2 py-1.5"
+                  >
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${item.bg}`}>
+                      <item.icon className={`h-3.5 w-3.5 ${item.color}`} />
+                    </div>
+                    <span className="flex-1 text-sm text-foreground">{item.label}</span>
+                    <Badge
+                      variant={item.count > 0 ? 'secondary' : 'outline'}
+                      className="min-w-[28px] justify-center px-1.5 py-0 text-xs font-semibold"
+                    >
+                      {item.count}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

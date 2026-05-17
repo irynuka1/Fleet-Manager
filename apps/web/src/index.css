@@ -99,6 +99,26 @@
   }
 }
 
+@layer components {
+  .dark .leaflet-popup-content-wrapper {
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
+  }
+
+  .dark .leaflet-popup-tip {
+    background: hsl(var(--card));
+  }
+
+  .dark .leaflet-popup-close-button {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
+  .dark .leaflet-popup-close-button:hover {
+    color: hsl(var(--foreground)) !important;
+  }
+}
+
 @layer utilities {
   /* Glass effect for cards */
   .glass {

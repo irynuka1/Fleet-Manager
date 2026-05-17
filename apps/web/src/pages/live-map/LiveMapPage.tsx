@@ -88,7 +88,7 @@ function createTruckIcon(online: boolean, heading: number = 0): L.DivIcon {
   const html = `
     <div style="position:relative;width:36px;height:36px;">
       ${pulse}
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:${bgColor};box-shadow:0 6px 16px -4px ${ringColor},0 0 0 3px white;transform:rotate(${heading}deg);transition:transform 0.5s ease;">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:${bgColor};box-shadow:0 6px 16px -4px ${ringColor},0 0 0 3px currentColor;color:white;transform:rotate(${heading}deg);transition:transform 0.5s ease;">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${-heading}deg);">
           <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
           <path d="M15 18H9"/>
@@ -138,15 +138,15 @@ function VehicleMarkerInner({ position: p, online, onSelect }: VehicleMarkerProp
       <Popup>
         <div className="min-w-[180px] space-y-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-foreground">
               {p.vehicle?.name ?? 'Vehicul'}
             </p>
             <span
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
                 online
-                  ? 'bg-teal-500/10 text-teal-700'
-                  : 'bg-gray-200 text-gray-600'
+                  ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400'
+                  : 'bg-muted text-muted-foreground'
               )}
             >
               <span
@@ -158,19 +158,19 @@ function VehicleMarkerInner({ position: p, online, onSelect }: VehicleMarkerProp
               {online ? 'Online' : 'Offline'}
             </span>
           </div>
-          <p className="font-mono text-xs text-gray-500">
+          <p className="font-mono text-xs text-muted-foreground">
             {p.vehicle?.plateNumber ?? '-'}
           </p>
           <div className="space-y-1 pt-1 text-xs">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-gray-500">Viteza</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-muted-foreground">Viteza</span>
+              <span className="font-medium text-foreground">
                 {Math.round(p.speed ?? 0)} km/h
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-gray-500">Actualizat</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-muted-foreground">Actualizat</span>
+              <span className="font-medium text-foreground">
                 {timeAgo(p.updatedAt)}
               </span>
             </div>
