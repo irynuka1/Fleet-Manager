@@ -7,6 +7,7 @@ import type { Map as LeafletMap } from 'leaflet';
 import { MapPin, Truck, Gauge, Wifi, WifiOff, Search } from 'lucide-react';
 
 import api from '@/lib/api';
+import { depotForCity } from '@/lib/geo';
 import { cn } from '@/lib/utils';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 
@@ -25,11 +26,21 @@ interface VehicleInfo {
   name: string;
   plateNumber: string;
   agencyId?: string | null;
+  agency?: { city?: string | null; name?: string } | null;
   category?: { id: string; name: string } | null;
 }
 
-interface LivePosition {
-  id?: string;
+interface FleetVehicle {
+  id: string;
+  name: string;
+  plateNumber: string;
+  agencyId: string;
+  agency?: { city?: string | null; name?: string } | null;
+  category?: { id: string; name: string } | null;
+  drivers: { driver: { id: string } }[];
+}
+
+interface MapVehicle {
   vehicleId: string;
   lat: number;
   lng: number;
@@ -37,6 +48,7 @@ interface LivePosition {
   heading: number;
   updatedAt: string;
   vehicle: VehicleInfo;
+  hasDriver: boolean;
 }
 
 interface TelemetryUpdatePayload {
@@ -62,8 +74,55 @@ const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isOnline(updatedAt: string): boolean {
-  return Date.now() - new Date(updatedAt).getTime() < OFFLINE_THRESHOLD_MS;
+function isOnline(entry: MapVehicle): boolean {
+  if (!entry.hasDriver) return false;
+  return Date.now() - new Date(entry.updatedAt).getTime() < OFFLINE_THRESHOLD_MS;
+}
+
+function mergeFleetWithTelemetry(
+  fleet: FleetVehicle[],
+  telemetry: Record<string, MapVehicle>,
+): MapVehicle[] {
+  const stale = new Date(0).toISOString();
+
+  return fleet.map((v) => {
+    const live = telemetry[v.id];
+    const hasDriver = v.drivers.length > 0;
+    const depot = depotForCity(v.agency?.city ?? v.agency?.name);
+
+    if (live) {
+      return {
+        ...live,
+        hasDriver,
+        vehicle: {
+          id: v.id,
+          name: v.name,
+          plateNumber: v.plateNumber,
+          agencyId: v.agencyId,
+          agency: v.agency,
+          category: v.category,
+        },
+      };
+    }
+
+    return {
+      vehicleId: v.id,
+      lat: depot.lat,
+      lng: depot.lng,
+      speed: 0,
+      heading: 0,
+      updatedAt: stale,
+      hasDriver,
+      vehicle: {
+        id: v.id,
+        name: v.name,
+        plateNumber: v.plateNumber,
+        agencyId: v.agencyId,
+        agency: v.agency,
+        category: v.category,
+      },
+    };
+  });
 }
 
 function timeAgo(updatedAt: string): string {
@@ -115,7 +174,7 @@ function createTruckIcon(online: boolean, heading: number = 0): L.DivIcon {
 // ---------------------------------------------------------------------------
 
 interface VehicleMarkerProps {
-  position: LivePosition;
+  position: MapVehicle;
   online: boolean;
   onSelect: (id: string) => void;
 }
@@ -190,7 +249,7 @@ const VehicleMarker = VehicleMarkerInner;
 export default function LiveMapPage() {
   const mapRef = useRef<LeafletMap | null>(null);
 
-  const [positions, setPositions] = useState<Record<string, LivePosition>>({});
+  const [telemetry, setTelemetry] = useState<Record<string, MapVehicle>>({});
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Tick state forces a re-render every 30s so timeAgo + online status stay fresh.
@@ -200,7 +259,18 @@ export default function LiveMapPage() {
   // Initial fetch
   // -------------------------------------------------------------------------
 
-  const { data: initialPositions, isLoading } = useQuery<LivePosition[]>({
+  const { data: fleetVehicles = [], isLoading: fleetLoading } = useQuery<FleetVehicle[]>({
+    queryKey: ['live-map-fleet'],
+    queryFn: async () => {
+      const { data } = await api.get('/vehicles', { params: { limit: 100 } });
+      return data.data;
+    },
+    refetchInterval: 60_000,
+  });
+
+  const { data: initialPositions, isLoading: telemetryLoading } = useQuery<
+    Omit<MapVehicle, 'hasDriver'>[]
+  >({
     queryKey: ['telemetry-live'],
     queryFn: async () => {
       const { data } = await api.get('/telemetry/live');
@@ -209,15 +279,18 @@ export default function LiveMapPage() {
     refetchInterval: 60_000,
   });
 
+  const isLoading = fleetLoading || telemetryLoading;
+
   useEffect(() => {
     if (!initialPositions) return;
-    // Full replace: prune vehicles that no longer exist server-side.
-    // Socket updates merge into this fresh state for real-time deltas.
-    const next: Record<string, LivePosition> = {};
+    const next: Record<string, MapVehicle> = {};
     for (const p of initialPositions) {
-      next[p.vehicleId] = p;
+      next[p.vehicleId] = {
+        ...p,
+        hasDriver: true,
+      };
     }
-    setPositions(next);
+    setTelemetry(next);
   }, [initialPositions]);
 
   // -------------------------------------------------------------------------
@@ -233,7 +306,7 @@ export default function LiveMapPage() {
     const socket = connectSocket(token);
 
     const handleUpdate = (payload: TelemetryUpdatePayload) => {
-      setPositions((prev) => {
+      setTelemetry((prev) => {
         const existing = prev[payload.vehicleId];
         const vehicleInfo: VehicleInfo = existing?.vehicle ?? {
           id: payload.vehicleId,
@@ -249,6 +322,7 @@ export default function LiveMapPage() {
             speed: payload.speed,
             heading: payload.heading,
             updatedAt: payload.updatedAt,
+            hasDriver: existing?.hasDriver ?? true,
             vehicle: {
               ...vehicleInfo,
               name: payload.name,
@@ -281,7 +355,10 @@ export default function LiveMapPage() {
   // Derived data
   // -------------------------------------------------------------------------
 
-  const allPositions = useMemo(() => Object.values(positions), [positions]);
+  const allPositions = useMemo(
+    () => mergeFleetWithTelemetry(fleetVehicles, telemetry),
+    [fleetVehicles, telemetry],
+  );
 
   const filteredPositions = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -293,16 +370,16 @@ export default function LiveMapPage() {
       })
       : allPositions;
     return [...list].sort((a, b) => {
-      const aOnline = isOnline(a.updatedAt) ? 0 : 1;
-      const bOnline = isOnline(b.updatedAt) ? 0 : 1;
+      const aOnline = isOnline(a) ? 0 : 1;
+      const bOnline = isOnline(b) ? 0 : 1;
       if (aOnline !== bOnline) return aOnline - bOnline;
       return (a.vehicle?.name ?? '').localeCompare(b.vehicle?.name ?? '');
     });
   }, [allPositions, search]);
 
   const onlineCount = useMemo(
-    () => allPositions.filter((p) => isOnline(p.updatedAt)).length,
-    [allPositions]
+    () => allPositions.filter((p) => isOnline(p)).length,
+    [allPositions],
   );
   const totalCount = allPositions.length;
 
@@ -310,7 +387,7 @@ export default function LiveMapPage() {
   // Handlers
   // -------------------------------------------------------------------------
 
-  const focusOn = (p: LivePosition) => {
+  const focusOn = (p: MapVehicle) => {
     setSelectedId(p.vehicleId);
     const map = mapRef.current;
     if (map) {
@@ -327,6 +404,7 @@ export default function LiveMapPage() {
     : `${onlineCount} vehicule online / ${totalCount} total`;
 
   const hasAny = totalCount > 0;
+  const hasFleet = fleetVehicles.length > 0;
 
   return (
     <div className="animate-fade-in flex h-full flex-col">
@@ -376,16 +454,16 @@ export default function LiveMapPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {!hasAny && !isLoading ? (
+            {!hasFleet && !isLoading ? (
               <EmptyState
                 icon={MapPin}
-                title="Nicio pozitie GPS inca"
-                description="Porneste simulatorul GPS pentru a vedea vehiculele pe harta."
+                title="Niciun vehicul in flota"
+                description="Adauga vehicule din Flota si asigneaza soferi pentru tracking live."
               />
             ) : (
               <ul className="divide-y">
                 {filteredPositions.map((p, idx) => {
-                  const online = isOnline(p.updatedAt);
+                  const online = isOnline(p);
                   const isSelected = selectedId === p.vehicleId;
                   return (
                     <li key={p.vehicleId}>
@@ -448,13 +526,24 @@ export default function LiveMapPage() {
                                 {online ? 'Online' : 'Offline'}
                               </span>
                             </span>
-                            {online && (
+                            {!p.hasDriver && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Fara sofer
+                              </span>
+                            )}
+                            {p.hasDriver && online && (
                               <span className="inline-flex items-center gap-1">
                                 <Gauge className="h-3 w-3" />
                                 {Math.round(p.speed)} km/h
                               </span>
                             )}
-                            <span>{timeAgo(p.updatedAt)}</span>
+                            <span>
+                              {!p.hasDriver
+                                ? 'Parcat'
+                                : p.updatedAt === new Date(0).toISOString()
+                                  ? '—'
+                                  : timeAgo(p.updatedAt)}
+                            </span>
                           </div>
                         </div>
                       </button>
@@ -490,19 +579,19 @@ export default function LiveMapPage() {
               <VehicleMarker
                 key={p.vehicleId}
                 position={p}
-                online={isOnline(p.updatedAt)}
+                online={isOnline(p)}
                 onSelect={setSelectedId}
               />
             ))}
           </MapContainer>
 
-          {!hasAny && !isLoading && (
+          {!hasFleet && !isLoading && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
               <div className="pointer-events-auto">
                 <EmptyState
                   icon={MapPin}
-                  title="Nicio pozitie GPS inca"
-                  description="Porneste simulatorul GPS pentru a vedea vehiculele pe harta."
+                  title="Niciun vehicul in flota"
+                  description="Adauga vehicule din Flota si asigneaza soferi pentru tracking live."
                 />
               </div>
             </div>

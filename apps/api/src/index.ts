@@ -87,8 +87,10 @@ app.use(errorHandler);
 const httpServer = http.createServer(app);
 setupSocketServer(httpServer);
 
-httpServer.listen(env.PORT, () => {
-  console.log(`[OmniKinetix API] Server pornit pe http://localhost:${env.PORT}`);
+const HOST = process.env.HOST || '0.0.0.0';
+
+httpServer.listen(env.PORT, HOST, () => {
+  console.log(`[OmniKinetix API] Server pornit pe http://${HOST}:${env.PORT}`);
   console.log(`[OmniKinetix API] Mediu: ${env.NODE_ENV}`);
   setupCronJobs();
 });

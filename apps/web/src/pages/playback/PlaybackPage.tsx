@@ -31,6 +31,12 @@ import {
 } from '@/components/ui/select';
 
 import api from '@/lib/api';
+import {
+  bearing,
+  buildCumulativeDistances,
+  samplePointAtProgress,
+  haversineMeters,
+} from '@/lib/geo';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,9 +71,18 @@ interface HistoryResponse {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function toLocalInput(date: Date) {
+function toDateInput(date: Date) {
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function toTimeInput(date: Date) {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function combineDateTime(date: string, time: string): string {
+  return new Date(`${date}T${time}`).toISOString();
 }
 
 function formatDateTime(iso: string) {
@@ -87,24 +102,11 @@ function formatDuration(ms: number) {
   return `${s}s`;
 }
 
-// Haversine distance in meters
-function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371000;
-  const toRad = (x: number) => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
+// Haversine distance in meters (playback stats)
 function totalDistanceMeters(points: HistoryPoint[]) {
   let total = 0;
   for (let i = 1; i < points.length; i++) {
-    total += haversine(points[i - 1], points[i]);
+    total += haversineMeters(points[i - 1], points[i]);
   }
   return total;
 }
@@ -183,9 +185,12 @@ interface AnimatedMarkerProps {
 function AnimatedMarker({ points, progress }: AnimatedMarkerProps) {
   if (points.length === 0) return null;
 
-  // Map progress (0..1) into an interpolated position along the points array
-  const n = points.length;
-  if (n === 1) {
+  const cumulative = useMemo(
+    () => buildCumulativeDistances(points),
+    [points],
+  );
+
+  if (points.length === 1) {
     return (
       <Marker
         position={[points[0].lat, points[0].lng]}
@@ -194,16 +199,15 @@ function AnimatedMarker({ points, progress }: AnimatedMarkerProps) {
     );
   }
 
-  const clamped = Math.max(0, Math.min(1, progress));
-  const exact = clamped * (n - 1);
-  const idx = Math.floor(exact);
-  const frac = exact - idx;
-  const a = points[idx];
-  const b = points[Math.min(idx + 1, n - 1)];
+  const { point: a, next: b, fraction } = samplePointAtProgress(
+    points,
+    cumulative,
+    progress,
+  );
 
-  const lat = a.lat + (b.lat - a.lat) * frac;
-  const lng = a.lng + (b.lng - a.lng) * frac;
-  const heading = b.heading ?? a.heading ?? 0;
+  const lat = a.lat + (b.lat - a.lat) * fraction;
+  const lng = a.lng + (b.lng - a.lng) * fraction;
+  const heading = b.heading ?? a.heading ?? bearing(a, b);
 
   return <Marker position={[lat, lng]} icon={createTruckIcon(heading)} />;
 }
@@ -217,12 +221,19 @@ export default function PlaybackPage() {
   const defaults = useMemo(() => {
     const now = new Date();
     const past = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    return { from: toLocalInput(past), to: toLocalInput(now) };
+    return {
+      fromDate: toDateInput(past),
+      fromTime: toTimeInput(past),
+      toDate: toDateInput(now),
+      toTime: toTimeInput(now),
+    };
   }, []);
 
   const [vehicleId, setVehicleId] = useState<string>('');
-  const [fromInput, setFromInput] = useState<string>(defaults.from);
-  const [toInput, setToInput] = useState<string>(defaults.to);
+  const [fromDate, setFromDate] = useState<string>(defaults.fromDate);
+  const [fromTime, setFromTime] = useState<string>(defaults.fromTime);
+  const [toDate, setToDate] = useState<string>(defaults.toDate);
+  const [toTime, setToTime] = useState<string>(defaults.toTime);
 
   // Range used for the actually-fetched history (only updated when "Incarca" is pressed)
   const [activeRange, setActiveRange] = useState<{
@@ -331,12 +342,29 @@ export default function PlaybackPage() {
 
   const distanceMeters = useMemo(() => totalDistanceMeters(points), [points]);
 
-  const currentPointIndex = useMemo(() => {
-    if (points.length === 0) return 0;
-    return Math.min(points.length - 1, Math.floor(progress * (points.length - 1)));
-  }, [progress, points]);
+  const cumulativeDistances = useMemo(
+    () => buildCumulativeDistances(points),
+    [points],
+  );
 
-  const currentPoint = points[currentPointIndex];
+  const currentSample = useMemo(() => {
+    if (points.length === 0) return null;
+    if (points.length === 1) {
+      return { point: points[0], fraction: 0 };
+    }
+    const { point, next, fraction } = samplePointAtProgress(
+      points,
+      cumulativeDistances,
+      progress,
+    );
+    const lat = point.lat + (next.lat - point.lat) * fraction;
+    const lng = point.lng + (next.lng - point.lng) * fraction;
+    const heading = next.heading ?? point.heading ?? bearing(point, next);
+    const speed = point.speed ?? next.speed ?? 0;
+    const createdAt =
+      fraction < 0.5 ? point.createdAt : next.createdAt;
+    return { lat, lng, heading, speed, createdAt };
+  }, [points, cumulativeDistances, progress]);
 
   const trackTimeRange = useMemo(() => {
     if (points.length === 0) return null;
@@ -347,7 +375,13 @@ export default function PlaybackPage() {
 
   const handleLoad = () => {
     if (!vehicleId) return;
-    setActiveRange({ vehicleId, from: fromInput, to: toInput });
+    const from = combineDateTime(fromDate, fromTime);
+    const to = combineDateTime(toDate, toTime);
+    if (new Date(from) >= new Date(to)) {
+      toast.error('Interval invalid: „De la” trebuie sa fie inainte de „Pana la”.');
+      return;
+    }
+    setActiveRange({ vehicleId, from, to });
   };
 
   const handleRestart = () => {
@@ -392,7 +426,7 @@ export default function PlaybackPage() {
       {/* Controls */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid gap-4 md:grid-cols-[2fr_1.4fr_1.4fr_auto] md:items-end">
+          <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] md:items-end">
             <div className="space-y-2">
               <Label>Vehicul</Label>
               <Select value={vehicleId} onValueChange={setVehicleId}>
@@ -416,22 +450,42 @@ export default function PlaybackPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="from">De la</Label>
+              <Label htmlFor="from-date">De la — data</Label>
               <Input
-                id="from"
-                type="datetime-local"
-                value={fromInput}
-                onChange={(e) => setFromInput(e.target.value)}
+                id="from-date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="to">Pana la</Label>
+              <Label htmlFor="from-time">De la — ora</Label>
               <Input
-                id="to"
-                type="datetime-local"
-                value={toInput}
-                onChange={(e) => setToInput(e.target.value)}
+                id="from-time"
+                type="time"
+                value={fromTime}
+                onChange={(e) => setFromTime(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="to-date">Pana la — data</Label>
+              <Input
+                id="to-date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="to-time">Pana la — ora</Label>
+              <Input
+                id="to-time"
+                type="time"
+                value={toTime}
+                onChange={(e) => setToTime(e.target.value)}
               />
             </div>
 
@@ -615,26 +669,26 @@ export default function PlaybackPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                   Pozitie curenta
                 </p>
-                {currentPoint ? (
+                {currentSample ? (
                   <div className="space-y-3">
                     <InfoRow
                       icon={Gauge}
                       label="Viteza"
-                      value={`${Math.round(currentPoint.speed ?? 0)} km/h`}
+                      value={`${Math.round(currentSample.speed ?? 0)} km/h`}
                       highlight
                     />
                     <InfoRow
                       icon={Navigation}
                       label="Directie"
-                      value={`${Math.round(currentPoint.heading ?? 0)}°`}
+                      value={`${Math.round(currentSample.heading ?? 0)}°`}
                     />
                     <InfoRow
                       icon={Clock}
                       label="Timp"
-                      value={formatDateTime(currentPoint.createdAt)}
+                      value={formatDateTime(currentSample.createdAt)}
                     />
                     <div className="rounded-md bg-muted/50 px-3 py-2 text-xs font-mono text-muted-foreground">
-                      {currentPoint.lat.toFixed(5)}, {currentPoint.lng.toFixed(5)}
+                      {currentSample.lat.toFixed(5)}, {currentSample.lng.toFixed(5)}
                     </div>
                   </div>
                 ) : (

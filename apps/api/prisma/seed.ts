@@ -6,6 +6,13 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database...');
 
+  // Seed-ul pastreaza conturile/structura, dar goleste flota la fiecare rulare.
+  console.log('Curatare flota existenta (vehicule, soferi, telemetrie, alerte)...');
+  await prisma.notification.deleteMany();
+  await prisma.vehicle.deleteMany();
+  await prisma.driver.deleteMany();
+  console.log('Flota curatata.');
+
   // SuperAdmin
   const hashedPassword = await bcrypt.hash('admin123', 12);
   const superAdmin = await prisma.user.upsert({
@@ -107,85 +114,7 @@ async function main() {
   });
   console.log(`Categorii create: ${catUtilaje.name}, ${catMasiniAngajati.name}, ${catDube.name}`);
 
-  // Vehicule demo
-  await prisma.vehicle.upsert({
-    where: { plateNumber: 'B-123-ABC' },
-    update: {},
-    create: {
-      name: 'Dacia Logan Service',
-      plateNumber: 'B-123-ABC',
-      categoryId: catMasiniAngajati.id,
-      agencyId: agentiaBucuresti.id,
-      monitoringType: 'KILOMETERS',
-      currentKm: 45200,
-      revisionThreshold: 50000,
-      itpExpiryDate: new Date('2026-06-15'),
-      rcaExpiryDate: new Date('2026-04-01'),
-    },
-  });
-
-  await prisma.vehicle.upsert({
-    where: { plateNumber: 'CJ-99-XYZ' },
-    update: {},
-    create: {
-      name: 'Excavator CAT 320',
-      plateNumber: 'CJ-99-XYZ',
-      categoryId: catUtilaje.id,
-      agencyId: agentiaCluj.id,
-      monitoringType: 'HOURS',
-      currentHours: 1800,
-      revisionThreshold: 2000,
-      itpExpiryDate: new Date('2026-09-01'),
-      rcaExpiryDate: new Date('2026-12-01'),
-    },
-  });
-
-  await prisma.vehicle.upsert({
-    where: { plateNumber: 'B-456-DEF' },
-    update: {},
-    create: {
-      name: 'Mercedes Sprinter',
-      plateNumber: 'B-456-DEF',
-      categoryId: catDube.id,
-      agencyId: agentiaBucuresti.id,
-      monitoringType: 'KILOMETERS',
-      currentKm: 76500,
-      revisionThreshold: 77000,
-      itpExpiryDate: new Date('2026-05-20'),
-      rcaExpiryDate: new Date('2026-08-15'),
-    },
-  });
-  console.log('Vehicule demo create.');
-
-  // Soferi demo
-  const sofer1 = await prisma.driver.upsert({
-    where: { id: 'a0000000-0000-4000-8000-000000000001' },
-    update: {},
-    create: {
-      id: 'a0000000-0000-4000-8000-000000000001',
-      firstName: 'Gheorghe',
-      lastName: 'Dragomir',
-      phone: '0721000001',
-      email: 'gheorghe@email.ro',
-      agencyId: agentiaBucuresti.id,
-    },
-  });
-
-  const sofer2 = await prisma.driver.upsert({
-    where: { id: 'a0000000-0000-4000-8000-000000000002' },
-    update: {},
-    create: {
-      id: 'a0000000-0000-4000-8000-000000000002',
-      firstName: 'Vasile',
-      lastName: 'Rusu',
-      phone: '0721000002',
-      email: 'vasile@email.ro',
-      agencyId: agentiaCluj.id,
-    },
-  });
-  console.log(`Soferi creati: ${sofer1.firstName} ${sofer1.lastName}, ${sofer2.firstName} ${sofer2.lastName}`);
-
-  console.log('Seed complet!');
+  console.log('Seed complet! (fara vehicule/soferi demo — adauga manual din aplicatie)');
 }
 
 main()

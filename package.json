@@ -4,12 +4,12 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "tools/*"
   ],
   "scripts": {
     "api": "npm run dev -w apps/api",
     "web": "npm run dev -w apps/web",
-    "mobile": "npm run start -w apps/mobile",
+    "simulator": "npm run start -w @omnikininetix/gps-simulator",
     "db:generate": "npm run db:generate -w apps/api",
     "db:migrate": "npm run db:migrate -w apps/api",
     "db:seed": "npm run db:seed -w apps/api",

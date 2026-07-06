@@ -7,7 +7,7 @@
 ## 1. INTRODUCERE
 
 ### 1.1. Scopul documentului
-Acest document defineste cerintele functionale si nefunctionale pentru sistemul informatic "OmniKinetix". Scopul este de a oferi o descriere detaliata a arhitecturii sistemului, a modului de interactiune a utilizatorilor cu interfata grafica (Desktop/Web si Android) si a proceselor asincrone (telemetrie GPS in timp real si alerte de mentenanta/documente), servind drept ghid pentru etapele de dezvoltare.
+Acest document defineste cerintele functionale si nefunctionale pentru sistemul informatic "OmniKinetix". Scopul este de a oferi o descriere detaliata a arhitecturii sistemului, a modului de interactiune a utilizatorilor cu interfata web (Desktop) si a proceselor asincrone (telemetrie GPS in timp real si alerte de mentenanta/documente), servind drept ghid pentru etapele de dezvoltare.
 
 ### 1.2. Domeniul/contextul de utilizare al sistemului
 Sistemul este destinat companiilor care opereaza flote auto medii si mari: firme de logistica si distributie, companii de curierat, servicii de rent-a-car si firmele de constructii care gestioneaza atat autovehicule clasice, cat si utilaje. Platforma va elimina necesitatea gestionarii manuale a reviziilor, va automatiza avertizarile legale (ITP, RCA) si va oferi monitorizare geografica in timp real a intregului parc auto, indiferent de tipul vehiculului.
@@ -24,7 +24,7 @@ Sistemul este destinat companiilor care opereaza flote auto medii si mari: firme
 ## 2. DESCRIERE GENERALA
 
 ### 2.1. Scurta descriere a sistemului
-Platforma este o aplicatie cu interfata web/desktop si una mobila care centralizeaza managementul vehiculelor, utilajelor si documentelor acestora pe filiale/agentii. Platforma va elimina necesitatea gestionarii manuale a reviziilor, va automatiza avertizarile legale (ITP, RCA) notificand utilizatorii si va oferi monitorizare geografica in timp real a intregului parc auto, indiferent de tipul vehiculului.
+Platforma este o aplicatie web care centralizeaza managementul vehiculelor, utilajelor si documentelor acestora pe filiale/agentii. Platforma va elimina necesitatea gestionarii manuale a reviziilor, va automatiza avertizarile legale (ITP, RCA) notificand utilizatorii si va oferi monitorizare geografica in timp real a intregului parc auto, indiferent de tipul vehiculului.
 
 ### 2.2. Motivatie (de ce este necesar)
 Gestionarea clasica a parcurilor auto se face defectuos, generand costuri neprevazute masive (amenzi pentru documente expirate, uzura necontrolata, utilizarea vehiculelor in afara orelor de program). Acest sistem automatizeaza vigilenta administrativa si ofera control vizual imediat.
@@ -106,11 +106,11 @@ Gestionarea clasica a parcurilor auto se face defectuos, generand costuri neprev
 
 ##### Cazul de Utilizare 2: Procesare si Alertare (ITP, RCA, Limita Revizii)
 
-**Actori implicati**: EngineAlerte (CRON intern), ServiciuSMTP (Extern), ManagerAgentie (pe Web si Mobile).
+**Actori implicati**: EngineAlerte (CRON intern), ServiciuSMTP (Extern), ManagerAgentie (Web).
 
 **Preconditie**: Masinile au introduse in sistem documente (ITP/RCA) cu date de expirare si o limita de revizie setata (ex: 15.000 km sau 500 ore). Managerul actualizeaza periodic rulajul curent.
 
-**Postconditie**: Daca pragurile sunt incalcate, alertele sunt salvate in baza de date (pentru a aparea instant in aplicatia Mobila si pe Desktop) si se trimite un singur e-mail centralizat.
+**Postconditie**: Daca pragurile sunt incalcate, alertele sunt salvate in baza de date (pentru a aparea instant in aplicatia web) si se trimite un singur e-mail centralizat.
 
 **Fluxul de baza**:
 1. CRON-ul se declanseaza automat pe server in fiecare zi la ora 11:00 AM.
@@ -119,15 +119,15 @@ Gestionarea clasica a parcurilor auto se face defectuos, generand costuri neprev
 4. Daca se gasesc nereguli (exista cel putin o alerta), sistemul salveaza aceste notificari in baza de date, asociate Managerului.
 5. Sistemul impinge un request catre serviciul SMTP pentru a trimite lista pe email.
 6. Managerul primeste email-ul.
-7. Cand managerul deschide aplicatia de Desktop sau cea de Mobil, sistemul interogheaza notificarile si afiseaza clopotelul rosu cu alerte.
+7. Cand managerul deschide aplicatia web, sistemul interogheaza notificarile si afiseaza clopotelul rosu cu alerte.
 
 **Alternativele la fluxul de baza**:
 - **A1**: Daca in urma query-urilor (pasii 2 si 3) nu se gaseste nicio neregula, CRON-ul isi incheie executia in liniste, fara a contacta baza de date pentru salvari suplimentare sau serverul SMTP.
-- **A2**: Daca serviciul SMTP (de email) este cazut, eroarea este tratata in fundal. Alertele raman salvate in baza de date, deci managerul tot va fi notificat pe Mobil/Desktop cand deschide aplicatia.
+- **A2**: Daca serviciul SMTP (de email) este cazut, eroarea este tratata in fundal. Alertele raman salvate in baza de date, deci managerul tot va fi notificat in aplicatia web cand o deschide.
 
 **Prioritate la implementare**: Critica (Ofera cea mai mare valoare de business companiei, prevenind amenzile).
 
-**Schita interfetei utilizator**: In aplicatia mobila (Android) si pe web, in coltul dreapta-sus, exista o iconita de clopotel. Daca sunt alerte, are un badge rosu cu un numar (ex: "3"). La apasare, se deschide o lista cu alertele.
+**Schita interfetei utilizator**: In aplicatia web, in coltul dreapta-sus, exista o iconita de clopotel. Daca sunt alerte, are un badge rosu cu un numar (ex: "3"). La apasare, se deschide o lista cu alertele.
 
 ---
 
@@ -163,7 +163,6 @@ Gestionarea clasica a parcurilor auto se face defectuos, generand costuri neprev
 |-----------|-----------|
 | Backend | Node.js + Express + TypeScript + Prisma + Socket.io |
 | Frontend Web | React + Vite + Shadcn/ui + Tailwind CSS + Leaflet.js + TypeScript |
-| Mobile | React Native (Expo) + TypeScript |
 | Baza de date | PostgreSQL + PostGIS |
 | Autentificare | JWT (access token 15min + refresh token 7 zile) |
 | Email | Nodemailer + SMTP |
@@ -173,7 +172,7 @@ Gestionarea clasica a parcurilor auto se face defectuos, generand costuri neprev
 
 ### 4.2. Arhitectura
 
-- **Monorepo** cu npm workspaces: `apps/api`, `apps/web`, `apps/mobile`, `packages/shared`, `tools/gps-simulator`
+- **Monorepo** cu npm workspaces: `apps/api`, `apps/web`, `tools/gps-simulator`
 - **Single-company database** — fara `company_id`. Izolarea se face doar prin `agency_id`.
 - **Desktop** = aplicatia web deschisa in browser (fara Electron).
 - **Limba interfetei**: Romana fara diacritice.
@@ -192,8 +191,8 @@ Gestionarea clasica a parcurilor auto se face defectuos, generand costuri neprev
 
 ### 4.4. Plan Sprint-uri
 
-| Sprint | Web | Mobile |
-|--------|-----|--------|
-| **Sprint 1** | Auth + CRUD complet (Management Resurse) + Panel SuperAdmin | — |
-| **Sprint 2** | Documente ITP/RCA + Alerte CRON + Notificari in-app | Setup Expo + Auth + Ecran Notificari |
-| **Sprint 3** | Harta Live + Playback traseu | Ecran Harta Live |
+| Sprint | Livrabil |
+|--------|----------|
+| **Sprint 1** | Auth + CRUD complet (Management Resurse) + Panel SuperAdmin |
+| **Sprint 2** | Documente ITP/RCA + Alerte CRON + Notificari in-app |
+| **Sprint 3** | Harta Live + Playback traseu |

@@ -71,12 +71,12 @@ Arhitectura descrisa in acest document defineste:
 | # | Obiectiv | Modalitate de realizare |
 |---|----------|------------------------|
 | 1 | **Izolare Multi-Tenant** | Baza de date unica cu filtrare pe `agencyId`. Middleware-ul `enforceAgency` si `getEffectiveAgencyId` asigura ca fiecare manager vede exclusiv datele agentiei sale. |
-| 2 | **Arhitectura modulara** | Monorepo cu npm workspaces (`apps/api`, `apps/web`, `packages/shared`). Fiecare domeniu al API-ului este un modul independent cu propriul set de fisiere (routes, controller, service, schema). |
-| 3 | **Type Safety end-to-end** | Intregul stack este scris in TypeScript. Pachetul `packages/shared` expune tipuri comune consumate atat de API cat si de frontend, eliminand inconsistentele de contract. |
+| 2 | **Arhitectura modulara** | Monorepo cu npm workspaces (`apps/api`, `apps/web`). Fiecare domeniu al API-ului este un modul independent cu propriul set de fisiere (routes, controller, service, schema). |
+| 3 | **Type Safety end-to-end** | Intregul stack este scris in TypeScript. API-ul si frontend-ul definesc contracte clare prin tipuri si validare Zod. |
 | 4 | **Control acces bazat pe roluri (RBAC)** | Trei roluri ierarhice: SUPER_ADMIN, COUNTRY_MANAGER, AGENCY_MANAGER. Fiecare ruta este protejata prin middleware-ul `authorize(...roles)`. |
 | 5 | **Scalabilitate orizontala** | Serverul API este stateless (starea de sesiune e in baza de date prin RefreshToken). Separarea clara intre API si baza de date permite scalare independenta. |
 | 6 | **Securitate** | Parole hash-uite cu bcrypt, access token JWT cu TTL scurt (15 min), refresh token stocat in DB cu TTL lung (7 zile), guard impotriva path traversal la servirea fisierelor, validare stricta a intrarilor cu Zod. |
-| 7 | **Extensibilitate** | Structura monorepo permite adaugarea facila a noilor aplicatii (`apps/mobile`, `tools/gps-simulator`) fara a modifica aplicatiile existente. |
+| 7 | **Extensibilitate** | Structura monorepo permite adaugarea facila a noilor unelte (`tools/gps-simulator`) fara a modifica aplicatiile existente. |
 
 ---
 
@@ -114,14 +114,9 @@ SPA React 19 + Vite + TypeScript + Tailwind CSS. Organizat pe pagini, componente
 | Agentii (Admin) | `/admin/agencies` | SUPER_ADMIN, COUNTRY_MANAGER |
 | Utilizatori (Admin) | `/admin/users` | SUPER_ADMIN |
 
-#### Subsistemul Shared (`packages/shared`)
+#### Subsistem planificat (Sprint 3)
 
-Pachet TypeScript pur care exporta tipurile si enum-urile comune (`User`, `Agency`, `Vehicle`, `Driver`, `DriverDocument`, `VehicleDocument`, `DriverVehicle`, `VehicleCategory`, `Role`, `MonitoringType`, `DocumentType`, `VehicleDocumentType`) consumate de ambele aplicatii.
-
-#### Subsisteme planificate (Sprint 2-3)
-
-- `apps/mobile` — React Native (Expo): ecran notificari + harta live
-- `tools/gps-simulator` — Script Node.js: emiteaza coordonate GPS la 5s pe WebSocket
+- `tools/gps-simulator` — Script Node.js: emiteaza coordonate GPS la 5s catre API
 
 ---
 
@@ -130,10 +125,6 @@ Pachet TypeScript pur care exporta tipurile si enum-urile comune (`User`, `Agenc
 ```mermaid
 flowchart TB
     subgraph monorepo [Monorepo OmniKinetix]
-        subgraph shared [packages/shared]
-            SharedTypes["Tipuri comune\n(models, auth, api)"]
-        end
-
         subgraph api [apps/api — Express REST API :3001]
             subgraph middleware [Middleware]
                 MW_Auth["authenticate\nauthorize"]
@@ -185,11 +176,7 @@ flowchart TB
             ApiClient["lib/api.ts\n(Axios + token refresh)"]
         end
 
-        subgraph mobile ["apps/mobile (planificat Sprint 2-3)"]
-            MOB["React Native (Expo)\nNotificari + Harta Live"]
-        end
-
-        subgraph tools ["tools/gps-simulator (planificat Sprint 3)"]
+        subgraph tools ["tools/gps-simulator"]
             GPS["GPS Simulator\n(Node.js script)"]
         end
     end
@@ -198,10 +185,6 @@ flowchart TB
         DB[("omnikininetix\nDB")]
     end
 
-    SharedTypes -->|"tipuri TypeScript"| api
-    SharedTypes -->|"tipuri TypeScript"| web
-    SharedTypes -->|"tipuri TypeScript"| mobile
-
     ApiClient -->|"HTTP REST /api"| api
     modules -->|"Prisma ORM"| CFG_DB
     CFG_DB -->|"TCP :5432"| DB
@@ -209,8 +192,7 @@ flowchart TB
     CFG_Env --> modules
     CFG_Env --> middleware
 
-    MOB -->|"HTTP REST + WebSocket"| api
-    GPS -->|"WebSocket (Sprint 3)"| api
+    GPS -->|"HTTP REST /api/telemetry/ingest"| api
 
     pages --> stores
     pages --> ApiClient
@@ -372,8 +354,7 @@ Sistemul OmniKinetix este distribuit pe trei niveluri de infrastructura: **Clien
 
 | Nod | Platforma | Artefacte gazduite | Protocol de comunicare |
 |-----|-----------|--------------------|------------------------|
-| **Dispozitiv Client (Browser)** | PC/Laptop, orice OS, browser modern | React SPA (JS/CSS/HTML compilat) | HTTPS (REST), WSS (Sprint 3) |
-| **Dispozitiv Mobile (planificat)** | Android (Expo Go / APK) | React Native App | HTTPS (REST), WSS (Sprint 3) |
+| **Dispozitiv Client (Browser)** | PC/Laptop, orice OS, browser modern | React SPA (JS/CSS/HTML compilat) | HTTPS (REST), WSS |
 | **Server Aplicatie (VPS)** | Linux, Node.js 20+ | Express API (dist/), uploads/ | TCP :3001 catre DB |
 | **Server Baza de Date** | Docker Container (PostgreSQL 15-alpine) | omnikininetix DB, postgres_data volume | TCP :5432 |
 | **Simulator GPS (planificat)** | Orice masina cu Node.js | Script Node.js | WSS catre API |
@@ -387,10 +368,6 @@ Sistemul OmniKinetix este distribuit pe trei niveluri de infrastructura: **Clien
 flowchart LR
     subgraph ClientNode ["Nod: Dispozitiv Client"]
         Browser["Browser Web\n(Chrome / Firefox / Edge)\n\nReact SPA\n(HTML + JS + CSS)"]
-    end
-
-    subgraph MobileNode ["Nod: Dispozitiv Android (Sprint 2-3)"]
-        MobileApp["React Native\n(Expo APK)\n\nEcran Notificari\nEcran Harta Live"]
     end
 
     subgraph VPS ["Nod: Server VPS (Linux)"]
@@ -413,9 +390,7 @@ flowchart LR
     end
 
     Browser -->|"HTTPS REST :443\n/api/*"| ExpressAPI
-    Browser -->|"WSS :443\n(Sprint 3)"| ExpressAPI
-    MobileApp -->|"HTTPS REST :443\n/api/*"| ExpressAPI
-    MobileApp -->|"WSS :443\n(Sprint 3)"| ExpressAPI
+    Browser -->|"WSS :443"| ExpressAPI
     ExpressAPI -->|"TCP :5432\nPrisma ORM"| Postgres
     GPSSim -->|"WSS\n{id_vehicul, lat, lng}"| ExpressAPI
     ExpressAPI -->|"SMTP/TLS :587\n(Sprint 2)"| SMTP
@@ -599,7 +574,7 @@ AGENCY_MANAGER
 Fiecare request de la client parcurge urmatoarea secventa de prelucrare pe server:
 
 ```
-Client (Browser/Mobile)
+Client (Browser)
   |
   | HTTP Request (Authorization: Bearer <token>)
   v
@@ -759,7 +734,7 @@ flowchart LR
 | **bcrypt** | Algoritm de hash pentru parole, rezistent la atacuri brute-force prin factor de cost configurabil (10 runde). |
 | **Controller** | Componenta responsabila cu extractia parametrilor din request si trimiterea raspunsului HTTP. Nu contine logica de business. |
 | **CRON** | Mecanism de planificare a executiei periodice a job-urilor server-side (ex: verificare documente expirate zilnic la 11:00 AM — Sprint 2). |
-| **Monorepo** | Depozit git unic care gazduieste toate aplicatiile si pachetele proiectului (`apps/api`, `apps/web`, `packages/shared`), gestionate cu npm workspaces. |
+| **Monorepo** | Depozit git unic care gazduieste toate aplicatiile proiectului (`apps/api`, `apps/web`, `tools/gps-simulator`), gestionate cu npm workspaces. |
 | **Multer** | Middleware Node.js pentru procesarea upload-urilor `multipart/form-data`, folosit pentru documentele scanate (PDF/imagine). |
 | **npm workspaces** | Functionalitate npm care permite gestionarea mai multor pachete intr-un monorepo cu un singur `node_modules` la radacina. |
 | **Prisma** | ORM TypeScript-first folosit pentru definirea schemei DB, generarea clientului type-safe si gestionarea migrarilor. |

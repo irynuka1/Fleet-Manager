@@ -6,7 +6,6 @@ Sprint 3 adauga:
 - Simulator GPS (Node.js, ruleaza local)
 - Harta Live pe web (Leaflet + OpenStreetMap)
 - Playback traseu cu animatie
-- Harta Live pe mobile (react-native-maps)
 
 ---
 
@@ -33,13 +32,6 @@ Asta instaleaza automat pachetele noi:
 - `socket.io` (backend)
 - `socket.io-client`, `leaflet`, `react-leaflet`, `@types/leaflet` (web)
 - `axios` + `tsx` pentru simulator
-
-Pentru `apps/mobile` (doar daca o testezi):
-```bash
-cd apps/mobile
-npx expo install react-native-maps socket.io-client
-cd ../..
-```
 
 ---
 
@@ -93,23 +85,29 @@ npm run web
 ```
 Astepti pana vezi `Local: http://localhost:5173/`.
 
-### Terminal 3 — Simulator GPS
+### Terminal 3 — Simulator GPS (OSRM)
 
-Prima data (doar prima oara):
+Din radacina proiectului:
+
 ```bash
-cd /path/to/FleetManagement/tools/gps-simulator
-npm install
+npm run simulator
 ```
 
-Pornire:
-```bash
-npm run start
-```
+**Important:** Seed-ul nu mai creeaza vehicule demo. Adauga vehicule manual din **Flota** inainte de a testa harta. Simulatorul:
+- incarca vehiculele existente din API
+- genereaza rute random pe strazi (OSRM) in orasul agentiei (Bucuresti / Cluj-Napoca)
+- daca flota e goala, asteapta si re-verifica la 60s
+
 Astepti pana vezi:
 ```
 [GPS Simulator] Autentificare reusita
-[GPS Simulator] N vehicule incarcate
-[GPS Simulator] Ruleaza ping-uri la fiecare 5s
+[GPS Simulator] Ruta OSRM: ... — Bucuresti, X.X km
+[GPS Simulator] Ping-uri la fiecare 5s
+```
+
+Sau, daca nu ai vehicule:
+```
+[GPS Simulator] Niciun vehicul in flota — astept...
 ```
 
 ---
@@ -118,9 +116,11 @@ Astepti pana vezi:
 
 1. Deschide `http://localhost:5173`
 2. Login: `admin@omnikininetix.ro` / `admin123`
-3. Click **"Harta Live"** in sidebar → vehicule pe harta Romaniei
-4. Click pe un vehicul din lista stanga → harta zoom-eaza la el
-5. Click **"Playback"** in sidebar → selecteaza un vehicul + interval → "Incarca Traseu" → Play
+3. Mergi la **Flota** si adauga cel putin un vehicul (ex: duba la Agentia Bucuresti)
+4. Porneste simulatorul: `npm run simulator`
+5. Click **"Harta Live"** in sidebar → vehiculele se misca pe strazi
+6. Click pe un vehicul din lista stanga → harta zoom-eaza la el
+7. Click **"Playback"** → selecteaza vehicul + interval → traseul urmeaza drumurile reale
 
 ---
 
@@ -133,11 +133,10 @@ Pentru simulator (toate optionale, au defaults):
 | `API_URL` | `http://localhost:3001/api` | URL-ul API-ului |
 | `SIMULATOR_EMAIL` | `admin@omnikininetix.ro` | Cont admin pentru simulator |
 | `SIMULATOR_PASSWORD` | `admin123` | Parola admin |
+| `OSRM_URL` | `https://router.project-osrm.org` | Server OSRM pentru rute (doar dev) |
+| `OSRM_DELAY_MS` | `350` | Pauza intre request-uri OSRM |
 
-Pentru mobile (in `apps/mobile/.env` daca testezi pe telefon):
-```
-EXPO_PUBLIC_API_URL=http://<IP_LAPTOP>:3001/api
-```
+**Nota OSRM:** serverul public are limita de rate; pentru productie foloseste o instanta OSRM proprie.
 
 ---
 
@@ -161,6 +160,12 @@ URL: `http://localhost:3001` (acelasi port ca API)
 **Simulatorul da 401 imediat dupa pornire**
 - Verifica ca admin-ul exista in DB: `npm run db:seed`
 - Verifica `SIMULATOR_EMAIL` / `SIMULATOR_PASSWORD`
+
+**Harta goala dupa seed**
+- Normal: seed-ul nu mai creeaza vehicule. Adauga vehicule din Flota, apoi porneste simulatorul.
+
+**Oras necunoscut la simulator**
+- Momentan suportate: Bucuresti, Cluj-Napoca (din campul `city` al agentiei). Alte orase sunt sarite cu warning in log.
 
 **Harta nu se actualizeaza**
 - Verifica ca simulatorul ruleaza si nu da erori
