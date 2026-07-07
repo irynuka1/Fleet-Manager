@@ -152,6 +152,10 @@ export const vehiclesController = {
         enforceAgency(req, vehicle.agencyId);
 
         const file = req.file;
+        if (!file) {
+          throw new AppError('Fisierul este obligatoriu', 400);
+        }
+
         const { type, expiryDate } = req.body;
 
         const document = await vehiclesService.addDocument(req.params.id as string, {

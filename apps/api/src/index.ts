@@ -23,7 +23,13 @@ const app = express();
 
 // Middleware global
 app.use(cors({ origin: env.NODE_ENV === 'development' ? true : (process.env.CORS_ORIGIN || 'http://localhost:5173'), credentials: true }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({
+  limit: '1mb',
+  type: (req) => {
+    const contentType = req.headers['content-type'] ?? '';
+    return contentType.includes('application/json') || contentType.includes('+json');
+  },
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);

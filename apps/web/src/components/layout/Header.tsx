@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Button } from '@/components/ui/button';
 import NotificationPanel from './NotificationPanel';
+import QuickActionsMenu from './QuickActionsMenu';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +46,7 @@ export default function Header() {
 
       {/* Right side controls */}
       <div className="flex items-center gap-2">
-        {/* Notification Bell */}
+        <QuickActionsMenu />
         <NotificationPanel />
 
         {/* Theme Toggle */}

@@ -12,7 +12,14 @@ import { env } from '../../config/env';
 // Ensure upload directory exists on module load
 fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
 
-const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/jpg',
+  'image/webp',
+  'image/gif',
+];
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {

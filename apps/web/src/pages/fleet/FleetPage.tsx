@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +17,7 @@ import {
 import { toast } from 'sonner';
 
 import api from '@/lib/api';
-import { cn, formatDate, daysUntil } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
 import { Button } from '@/components/ui/button';
@@ -139,39 +139,66 @@ type CategoryFormValues = z.infer<typeof categorySchema>;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function DateBadge({ date }: { date: string | null }) {
-  if (!date) {
+function getRevisionRemaining(vehicle: Vehicle): number | null {
+  const threshold = vehicle.revisionThreshold;
+  if (threshold == null || threshold <= 0) return null;
+
+  if (vehicle.monitoringType === 'KILOMETERS') {
+    if (vehicle.currentKm == null) return null;
+    return threshold - (vehicle.currentKm % threshold);
+  }
+
+  if (vehicle.currentHours == null) return null;
+  return threshold - (vehicle.currentHours % threshold);
+}
+
+function RevisionStatusBadge({ vehicle }: { vehicle: Vehicle }) {
+  const remaining = getRevisionRemaining(vehicle);
+
+  if (remaining === null) {
     return <span className="text-muted-foreground">-</span>;
   }
 
-  const days = daysUntil(date);
-  if (days === null) {
-    return <span className="text-muted-foreground">-</span>;
+  let colorClass =
+    'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+  let label = 'OK';
+
+  if (remaining < 1000) {
+    colorClass = 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400';
+    label = 'Urgent';
+  } else if (remaining < 3000) {
+    colorClass = 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400';
+    label = 'Atentie';
   }
 
-  let variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  let colorClass: string;
-
-  if (days < 0) {
-    variant = 'outline';
-    colorClass = 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400';
-  } else if (days <= 30) {
-    variant = 'outline';
-    colorClass = 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400';
-  } else {
-    variant = 'outline';
-    colorClass = 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
-  }
+  const unit = vehicle.monitoringType === 'KILOMETERS' ? 'km' : 'h';
 
   return (
-    <Badge variant={variant} className={cn(colorClass)}>
-      {formatDate(date)}
+    <Badge variant="outline" className={cn('w-[84px] justify-center', colorClass)} title={`${remaining.toLocaleString('ro-RO')} ${unit} pana la revizie`}>
+      {label}
     </Badge>
+  );
+}
+
+function DocumentCountBadge({ count }: { count: number }) {
+  return (
+    <span className="inline-flex min-w-[32px] items-center justify-center rounded-full bg-muted px-3 py-1 text-sm font-medium text-foreground">
+      {count}
+    </span>
   );
 }
 
 function Spinner({ className }: { className?: string }) {
   return <Loader2 className={cn('h-4 w-4 animate-spin', className)} />;
+}
+
+const VEHICLE_DOCUMENT_TYPES = ['ITP', 'RCA', 'REGISTRATION', 'INSURANCE', 'OTHER'] as const;
+
+function getDefaultVehicleDocType(documents: VehicleDocument[] | undefined): string {
+  const available = VEHICLE_DOCUMENT_TYPES.find(
+    (type) => !documents?.some((doc) => doc.type === type)
+  );
+  return available ?? 'OTHER';
 }
 
 // ---------------------------------------------------------------------------
@@ -316,38 +343,44 @@ function VehicleModal({
   const [docFile, setDocFile] = useState<File | null>(null);
   const [docType, setDocType] = useState<string>('ITP');
   const [docExpiry, setDocExpiry] = useState<string>('');
+  const docFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (vehicle?.documents) {
-      const types = ['ITP', 'RCA', 'REGISTRATION', 'INSURANCE', 'OTHER'];
-      const availableItem = types.find((t) => !vehicle.documents!.some((d: any) => d.type === t));
-      if (vehicle.documents.some((d: any) => d.type === docType)) {
-        setDocType(availableItem || '');
-      }
-    }
-  }, [vehicle, docType]);
+    if (!open || !vehicle) return;
+    setDocFile(null);
+    setDocExpiry('');
+    setDocType(getDefaultVehicleDocType(vehicle.documents));
+    if (docFileInputRef.current) docFileInputRef.current.value = '';
+  }, [open, vehicle?.id, vehicle?.documents?.length]);
+
+  const canUploadDocument = Boolean(docFile && docType && docExpiry);
 
   const uploadDocMutation = useMutation({
     mutationFn: async () => {
-      if (!vehicle || !docFile) return;
+      if (!vehicle) throw new Error('Vehiculul nu este selectat.');
+      if (!docFile) throw new Error('Selectati un fisier.');
+      if (!docType) throw new Error('Selectati tipul documentului.');
       if (!docExpiry) throw new Error('Data de expirare este obligatorie.');
+
       const formData = new FormData();
       formData.append('file', docFile);
       formData.append('type', docType);
-      if (docExpiry) formData.append('expiryDate', docExpiry);
+      formData.append('expiryDate', docExpiry);
 
-      await api.post(`/vehicles/${vehicle.id}/documents`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await api.post(`/vehicles/${vehicle.id}/documents`, formData);
     },
     onSuccess: () => {
       toast.success('Document incarcat cu succes');
       queryClient.invalidateQueries({ queryKey: ['vehicles-by-category'] });
       setDocFile(null);
       setDocExpiry('');
+      if (docFileInputRef.current) docFileInputRef.current.value = '';
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error;
+      const msg =
+        error?.response?.data?.error ||
+        error?.response?.data?.details?.[0]?.message ||
+        error?.message;
       toast.error(msg || 'Eroare la incarcarea documentului');
     },
   });
@@ -655,14 +688,14 @@ function VehicleModal({
                         <Label>Tip Document</Label>
                         <Select value={docType} onValueChange={setDocType}>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Selecteaza tipul" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="ITP" disabled={vehicle?.documents?.some((d: any) => d.type === 'ITP')}>ITP</SelectItem>
-                            <SelectItem value="RCA" disabled={vehicle?.documents?.some((d: any) => d.type === 'RCA')}>RCA</SelectItem>
-                            <SelectItem value="REGISTRATION" disabled={vehicle?.documents?.some((d: any) => d.type === 'REGISTRATION')}>Talon / Inmatriculare</SelectItem>
-                            <SelectItem value="INSURANCE" disabled={vehicle?.documents?.some((d: any) => d.type === 'INSURANCE')}>Asigurare Casco</SelectItem>
-                            <SelectItem value="OTHER" disabled={vehicle?.documents?.some((d: any) => d.type === 'OTHER')}>Altul</SelectItem>
+                            <SelectItem value="ITP" disabled={vehicle?.documents?.some((d) => d.type === 'ITP')}>ITP</SelectItem>
+                            <SelectItem value="RCA" disabled={vehicle?.documents?.some((d) => d.type === 'RCA')}>RCA</SelectItem>
+                            <SelectItem value="REGISTRATION" disabled={vehicle?.documents?.some((d) => d.type === 'REGISTRATION')}>Talon / Inmatriculare</SelectItem>
+                            <SelectItem value="INSURANCE" disabled={vehicle?.documents?.some((d) => d.type === 'INSURANCE')}>Asigurare Casco</SelectItem>
+                            <SelectItem value="OTHER">Altul</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -682,24 +715,32 @@ function VehicleModal({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Fisier (PDF/Imagine)</Label>
-                      <div className="relative group">
-                        <Input
-                          type="file"
-                          accept=".pdf,image/*"
-                          onChange={(e) => setDocFile(e.target.files?.[0] || null)}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />
-                        <div className="flex h-10 w-full rounded-md border border-input bg-background items-center justify-center text-sm text-muted-foreground px-3 group-hover:bg-accent group-hover:text-accent-foreground transition-colors duration-200">
-                          {docFile ? docFile.name : 'Niciun fisier selectat'}
-                        </div>
-                      </div>
+                      <Label htmlFor={`vehicle-doc-upload-${vehicle.id}`}>Fisier (PDF/Imagine)</Label>
+                      <input
+                        ref={docFileInputRef}
+                        id={`vehicle-doc-upload-${vehicle.id}`}
+                        type="file"
+                        accept=".pdf,image/*"
+                        className="sr-only"
+                        onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+                      />
+                      <Label
+                        htmlFor={`vehicle-doc-upload-${vehicle.id}`}
+                        className="flex h-10 w-full cursor-pointer items-center justify-center rounded-md border border-input bg-background px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      >
+                        {docFile ? docFile.name : 'Apasa pentru a selecta fisier'}
+                      </Label>
                     </div>
+                    {!canUploadDocument && (
+                      <p className="text-xs text-muted-foreground">
+                        Selecteaza tipul documentului, data expirarii si fisierul pentru a activa incarcarea.
+                      </p>
+                    )}
                     <Button
                       type="button"
                       variant="secondary"
                       className="w-full"
-                      disabled={!docFile || uploadDocMutation.isPending}
+                      disabled={!canUploadDocument || uploadDocMutation.isPending}
                       onClick={() => uploadDocMutation.mutate()}
                     >
                       {uploadDocMutation.isPending && <Spinner className="mr-2" />}
@@ -1134,11 +1175,10 @@ export default function FleetPage() {
                           <TableRow>
                             <TableHead className="text-center w-[15%]">Nume</TableHead>
                             <TableHead className="text-center w-[15%]">Nr. Inmatriculare</TableHead>
-                            <TableHead className="text-center w-[10%]">Tip Monitorizare</TableHead>
+                            <TableHead className="text-center w-[10%]">Stare</TableHead>
                             <TableHead className="text-center w-[12%]">Km/Ore Curente</TableHead>
                             <TableHead className="text-center w-[12%]">Prag Revizie</TableHead>
-                            <TableHead className="text-center w-[8%]">ITP</TableHead>
-                            <TableHead className="text-center w-[8%]">RCA</TableHead>
+                            <TableHead className="text-center w-[8%]">Documente</TableHead>
                             <TableHead className="text-center w-[10%]">Soferi</TableHead>
                             <TableHead className="text-center w-[10%]">Actiuni</TableHead>
                           </TableRow>
@@ -1155,11 +1195,7 @@ export default function FleetPage() {
                                 </code>
                               </TableCell>
                               <TableCell className="text-center">
-                                <Badge variant="outline" className="w-[84px] justify-center">
-                                  {vehicle.monitoringType === 'KILOMETERS'
-                                    ? 'Kilometri'
-                                    : 'Ore'}
-                                </Badge>
+                                <RevisionStatusBadge vehicle={vehicle} />
                               </TableCell>
                               <TableCell className="text-center">
                                 {vehicle.monitoringType === 'KILOMETERS'
@@ -1178,10 +1214,7 @@ export default function FleetPage() {
                                   : '-'}
                               </TableCell>
                               <TableCell className="text-center">
-                                <DateBadge date={vehicle.itpExpiryDate} />
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <DateBadge date={vehicle.rcaExpiryDate} />
+                                <DocumentCountBadge count={vehicle.documents?.length ?? 0} />
                               </TableCell>
                               <TableCell className="text-center">
                                 {vehicle.drivers.length > 0 ? (

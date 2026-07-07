@@ -67,6 +67,7 @@ import { useAuthStore } from '@/stores/auth.store';
 interface Agency {
   id: string;
   name: string;
+  city: string | null;
 }
 
 interface DriverDocument {
@@ -223,9 +224,7 @@ function DocumentsTab({ driver }: { driver: Driver }) {
       if (expiryDate) {
         formData.append('expiryDate', new Date(expiryDate).toISOString());
       }
-      await api.post(`/drivers/${driver.id}/documents`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await api.post(`/drivers/${driver.id}/documents`, formData);
     },
     onSuccess: () => {
       toast.success('Document incarcat cu succes');
@@ -236,7 +235,10 @@ function DocumentsTab({ driver }: { driver: Driver }) {
       if (fileInputRef.current) fileInputRef.current.value = '';
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error;
+      const msg =
+        error?.response?.data?.error ||
+        error?.response?.data?.details?.[0]?.message ||
+        error?.message;
       toast.error(msg || 'Eroare la incarcarea documentului');
     },
   });
@@ -931,7 +933,7 @@ export default function DriversPage() {
                       <TableCell className="text-center">{driver.phone ?? '-'}</TableCell>
                       <TableCell className="text-center">{driver.email ?? '-'}</TableCell>
                       {user?.role !== 'AGENCY_MANAGER' && (
-                        <TableCell className="text-center">{driver.agency?.name ?? '-'}</TableCell>
+                        <TableCell className="text-center">{driver.agency?.city ?? driver.agency?.name ?? '-'}</TableCell>
                       )}
                       <TableCell className="text-center">
                         <Badge variant="secondary">{driver.documents.length}</Badge>

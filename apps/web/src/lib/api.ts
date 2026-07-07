@@ -2,15 +2,21 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor: inject access token
+// Request interceptor: inject access token + correct Content-Type
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  } else {
+    config.headers.set('Content-Type', 'application/json');
+  }
+
   return config;
 });
 
