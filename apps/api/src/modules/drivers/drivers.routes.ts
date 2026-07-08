@@ -44,6 +44,22 @@ const upload = multer({
   },
 });
 
+const PROFILE_PHOTO_MIME_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'];
+
+const profilePhotoUpload = multer({
+  storage,
+  limits: {
+    fileSize: env.MAX_FILE_SIZE,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (PROFILE_PHOTO_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tip de fisier nepermis. Sunt acceptate doar imagini: JPEG, PNG, WebP, GIF'));
+    }
+  },
+});
+
 const router = Router();
 
 router.use(authenticate);
@@ -84,6 +100,19 @@ router.delete(
   '/:id/documents/:docId',
   authorize('SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'),
   driversController.deleteDocument,
+);
+
+router.post(
+  '/:id/photo',
+  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'),
+  profilePhotoUpload.single('file'),
+  driversController.uploadProfilePhoto,
+);
+
+router.delete(
+  '/:id/photo',
+  authorize('SUPER_ADMIN', 'COUNTRY_MANAGER', 'AGENCY_MANAGER'),
+  driversController.deleteProfilePhoto,
 );
 
 export default router;

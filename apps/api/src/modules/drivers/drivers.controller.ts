@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import { driversService } from './drivers.service';
 import { enforceAgency, getEffectiveAgencyId, forceAgencyId } from '../../middleware/agencyScope';
+import { AppError } from '../../utils/AppError';
 
 export const driversController = {
   async list(req: Request, res: Response, next: NextFunction) {
@@ -138,6 +139,52 @@ export const driversController = {
 
       await driversService.deleteDocument(req.params.docId as string);
       res.json({ success: true, data: null });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async uploadProfilePhoto(req: Request, res: Response, next: NextFunction) {
+    try {
+      const driver = await driversService.getById(req.params.id as string);
+      if (!driver) {
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
+        return res.status(404).json({ success: false, error: 'Soferul nu a fost gasit' });
+      }
+
+      try {
+        enforceAgency(req, driver.agencyId);
+
+        const file = req.file;
+        if (!file) {
+          throw new AppError('Fisierul este obligatoriu', 400);
+        }
+
+        const updated = await driversService.updateProfilePhoto(req.params.id as string, {
+          filePath: file.path,
+          fileName: file.originalname,
+        });
+
+        res.json({ success: true, data: updated });
+      } catch (innerError) {
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
+        throw innerError;
+      }
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteProfilePhoto(req: Request, res: Response, next: NextFunction) {
+    try {
+      const driver = await driversService.getById(req.params.id as string);
+      if (!driver) {
+        return res.status(404).json({ success: false, error: 'Soferul nu a fost gasit' });
+      }
+      enforceAgency(req, driver.agencyId);
+
+      const updated = await driversService.deleteProfilePhoto(req.params.id as string);
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }

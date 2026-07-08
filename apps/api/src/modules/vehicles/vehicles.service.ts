@@ -44,7 +44,11 @@ export const vehiclesService = {
           agency: true,
           drivers: {
             include: {
-              driver: true,
+              driver: {
+                include: {
+                  agency: true,
+                },
+              },
             },
           },
           // @ts-ignore (force IDE to ignore cache error)
@@ -72,7 +76,11 @@ export const vehiclesService = {
         agency: true,
         drivers: {
           include: {
-            driver: true,
+            driver: {
+              include: {
+                agency: true,
+              },
+            },
           },
         },
         // @ts-ignore (force IDE to ignore cache error)
@@ -164,7 +172,11 @@ export const vehiclesService = {
             agency: true,
             drivers: {
               include: {
-                driver: true,
+                driver: {
+                  include: {
+                    agency: true,
+                  },
+                },
               },
             },
             // @ts-ignore (force IDE to ignore cache error)

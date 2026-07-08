@@ -101,23 +101,23 @@ export const driversService = {
   },
 
   async delete(id: string) {
-    // Fetch documents before deletion so we can clean up files after
+    const driver = await prisma.driver.findUnique({ where: { id } });
     const documents = await prisma.driverDocument.findMany({
       where: { driverId: id },
     });
 
-    // Delete DB first (cascade deletes documents), then clean up files
     const result = await prisma.driver.delete({ where: { id } });
 
-    // Best-effort file cleanup after successful DB delete
-    for (const doc of documents) {
-      if (doc.filePath) {
-        try {
-          const resolvedPath = path.resolve(doc.filePath);
-          fs.unlinkSync(resolvedPath);
-        } catch {
-          // File may already be deleted, ignore
-        }
+    const pathsToDelete = [
+      driver?.profilePhotoPath,
+      ...documents.map((doc) => doc.filePath),
+    ].filter(Boolean) as string[];
+
+    for (const filePath of pathsToDelete) {
+      try {
+        fs.unlinkSync(path.resolve(filePath));
+      } catch {
+        // File may already be deleted, ignore
       }
     }
 
@@ -163,5 +163,74 @@ export const driversService = {
 
   async getDocument(documentId: string) {
     return prisma.driverDocument.findUnique({ where: { id: documentId } });
+  },
+
+  async updateProfilePhoto(
+    driverId: string,
+    data: { filePath: string; fileName: string },
+  ) {
+    const driver = await prisma.driver.findUnique({ where: { id: driverId } });
+    if (!driver) throw new AppError('Soferul nu a fost gasit', 404);
+
+    const oldPath = driver.profilePhotoPath;
+
+    const updated = await prisma.driver.update({
+      where: { id: driverId },
+      data: {
+        profilePhotoPath: data.filePath,
+        profilePhotoName: data.fileName,
+      },
+      include: {
+        agency: true,
+        documents: true,
+        vehicles: {
+          include: {
+            vehicle: true,
+          },
+        },
+      },
+    });
+
+    if (oldPath) {
+      try {
+        fs.unlinkSync(path.resolve(oldPath));
+      } catch {
+        // ignore
+      }
+    }
+
+    return updated;
+  },
+
+  async deleteProfilePhoto(driverId: string) {
+    const driver = await prisma.driver.findUnique({ where: { id: driverId } });
+    if (!driver) throw new AppError('Soferul nu a fost gasit', 404);
+
+    const updated = await prisma.driver.update({
+      where: { id: driverId },
+      data: {
+        profilePhotoPath: null,
+        profilePhotoName: null,
+      },
+      include: {
+        agency: true,
+        documents: true,
+        vehicles: {
+          include: {
+            vehicle: true,
+          },
+        },
+      },
+    });
+
+    if (driver.profilePhotoPath) {
+      try {
+        fs.unlinkSync(path.resolve(driver.profilePhotoPath));
+      } catch {
+        // ignore
+      }
+    }
+
+    return updated;
   },
 };

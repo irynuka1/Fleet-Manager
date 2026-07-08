@@ -1,10 +1,21 @@
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import type { Map as LeafletMap } from 'leaflet';
-import { MapPin, Truck, Gauge, Wifi, WifiOff, Search } from 'lucide-react';
+import {
+  MapPin,
+  Truck,
+  Gauge,
+  Wifi,
+  WifiOff,
+  Search,
+  X,
+  Phone,
+  Building2,
+  User,
+} from 'lucide-react';
 
 import api from '@/lib/api';
 import { depotForCity } from '@/lib/geo';
@@ -14,12 +25,24 @@ import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { EmptyState } from '@/components/shared/EmptyState';
+import DriverAvatar from '@/components/shared/DriverAvatar';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+interface DriverInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  profilePhotoPath?: string | null;
+  agency?: { city?: string | null; name?: string } | null;
+}
 
 interface VehicleInfo {
   id: string;
@@ -37,7 +60,7 @@ interface FleetVehicle {
   agencyId: string;
   agency?: { city?: string | null; name?: string } | null;
   category?: { id: string; name: string } | null;
-  drivers: { driver: { id: string } }[];
+  drivers: { driver: DriverInfo }[];
 }
 
 interface MapVehicle {
@@ -137,6 +160,14 @@ function timeAgo(updatedAt: string): string {
   return `acum ${days}z`;
 }
 
+function formatLocation(lat: number, lng: number): string {
+  return `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
+}
+
+function getPrimaryDriver(fleetEntry: FleetVehicle | undefined): DriverInfo | null {
+  return fleetEntry?.drivers[0]?.driver ?? null;
+}
+
 function createTruckIcon(online: boolean, heading: number = 0): L.DivIcon {
   const bgColor = online ? '#14b8a6' : '#9ca3af';
   const ringColor = online ? 'rgba(20, 184, 166, 0.25)' : 'rgba(156, 163, 175, 0.2)';
@@ -169,19 +200,16 @@ function createTruckIcon(online: boolean, heading: number = 0): L.DivIcon {
 }
 
 // ---------------------------------------------------------------------------
-// Vehicle marker (memoized so the divIcon is only recreated when relevant
-// inputs change — every ~10 degrees of heading rather than every update)
+// Vehicle marker
 // ---------------------------------------------------------------------------
 
 interface VehicleMarkerProps {
   position: MapVehicle;
   online: boolean;
-  onSelect: (id: string) => void;
+  onMapSelect: (position: MapVehicle) => void;
 }
 
-function VehicleMarkerInner({ position: p, online, onSelect }: VehicleMarkerProps) {
-  // Snap heading to nearest 10 degrees to keep the icon stable across small
-  // heading deltas — this dramatically reduces React + Leaflet churn.
+function VehicleMarkerInner({ position: p, online, onMapSelect }: VehicleMarkerProps) {
   const snappedHeading = Math.round(p.heading / 10) * 10;
   const icon = useMemo(
     () => createTruckIcon(online, snappedHeading),
@@ -192,55 +220,160 @@ function VehicleMarkerInner({ position: p, online, onSelect }: VehicleMarkerProp
     <Marker
       position={[p.lat, p.lng]}
       icon={icon}
-      eventHandlers={{ click: () => onSelect(p.vehicleId) }}
-    >
-      <Popup>
-        <div className="min-w-[180px] space-y-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground">
-              {p.vehicle?.name ?? 'Vehicul'}
-            </p>
-            <span
-              className={cn(
-                'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                online
-                  ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
-              <span
-                className={cn(
-                  'h-1.5 w-1.5 rounded-full',
-                  online ? 'bg-teal-500' : 'bg-gray-400'
-                )}
-              />
-              {online ? 'Online' : 'Offline'}
-            </span>
-          </div>
-          <p className="font-mono text-xs text-muted-foreground">
-            {p.vehicle?.plateNumber ?? '-'}
-          </p>
-          <div className="space-y-1 pt-1 text-xs">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Viteza</span>
-              <span className="font-medium text-foreground">
-                {Math.round(p.speed ?? 0)} km/h
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Actualizat</span>
-              <span className="font-medium text-foreground">
-                {timeAgo(p.updatedAt)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Popup>
-    </Marker>
+      eventHandlers={{ click: () => onMapSelect(p) }}
+    />
   );
 }
 
 const VehicleMarker = VehicleMarkerInner;
+
+// ---------------------------------------------------------------------------
+// Map side panel
+// ---------------------------------------------------------------------------
+
+interface MapDetailPanelProps {
+  position: MapVehicle;
+  driver: DriverInfo | null;
+  online: boolean;
+  onClose: () => void;
+}
+
+function MapDetailPanel({ position, driver, online, onClose }: MapDetailPanelProps) {
+  const agencyLabel =
+    driver?.agency?.city ?? driver?.agency?.name ?? position.vehicle?.agency?.city ?? position.vehicle?.agency?.name ?? '-';
+
+  return (
+    <div className="absolute inset-y-0 right-0 z-[1000] flex w-full max-w-sm animate-fade-in">
+      <div className="ml-auto flex h-full w-full flex-col border-l border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <p className="text-sm font-semibold text-foreground">Detalii vehicul</p>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} aria-label="Inchide">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          <div className="flex flex-col items-center gap-3 pt-2">
+            {driver ? (
+              <>
+                <DriverAvatar
+                  firstName={driver.firstName}
+                  lastName={driver.lastName}
+                  profilePhotoPath={driver.profilePhotoPath}
+                  className="h-20 w-20"
+                  fallbackClassName="text-xl"
+                />
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-foreground">
+                    {driver.firstName} {driver.lastName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Sofer asignat</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                  <User className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-foreground">Fara sofer</p>
+                  <p className="text-sm text-muted-foreground">Vehicul neasignat</p>
+                </div>
+              </>
+            )}
+
+            <Badge
+              variant="outline"
+              className={cn(
+                'gap-1.5 px-2.5 py-1',
+                online
+                  ? 'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-400'
+                  : 'border-muted-foreground/20 bg-muted text-muted-foreground'
+              )}
+            >
+              {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+              {online ? 'Online' : 'Offline'}
+            </Badge>
+          </div>
+
+          {driver && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sofer
+                </p>
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-foreground">{agencyLabel}</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-foreground">{driver.phone || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <Separator />
+
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Vehicul
+            </p>
+            <div className="space-y-2.5 text-sm">
+              <div className="flex items-start gap-2.5">
+                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-medium text-foreground">{position.vehicle?.name ?? 'Vehicul'}</p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {position.vehicle?.plateNumber ?? '-'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Telemetrie
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Gauge className="h-3.5 w-3.5" />
+                  Viteza
+                </div>
+                <p className="text-lg font-semibold text-foreground">
+                  {Math.round(position.speed ?? 0)} km/h
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Locatie
+                </div>
+                <p className="text-xs font-medium leading-relaxed text-foreground">
+                  {formatLocation(position.lat, position.lng)}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Actualizat:{' '}
+              {position.updatedAt === new Date(0).toISOString()
+                ? '—'
+                : timeAgo(position.updatedAt)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -252,12 +385,8 @@ export default function LiveMapPage() {
   const [telemetry, setTelemetry] = useState<Record<string, MapVehicle>>({});
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // Tick state forces a re-render every 30s so timeAgo + online status stay fresh.
+  const [mapPanelId, setMapPanelId] = useState<string | null>(null);
   const [, setTick] = useState(0);
-
-  // -------------------------------------------------------------------------
-  // Initial fetch
-  // -------------------------------------------------------------------------
 
   const { data: fleetVehicles = [], isLoading: fleetLoading } = useQuery<FleetVehicle[]>({
     queryKey: ['live-map-fleet'],
@@ -292,12 +421,6 @@ export default function LiveMapPage() {
     }
     setTelemetry(next);
   }, [initialPositions]);
-
-  // -------------------------------------------------------------------------
-  // Socket connection
-  // -------------------------------------------------------------------------
-  // Note: SUPER_ADMIN and COUNTRY_MANAGER are auto-joined to all agency rooms
-  // server-side on connection, so no client-side subscribe loop is needed.
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -339,21 +462,12 @@ export default function LiveMapPage() {
       socket.off('telemetry:update', handleUpdate);
       disconnectSocket();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // -------------------------------------------------------------------------
-  // Periodic re-render for time-ago labels
-  // -------------------------------------------------------------------------
 
   useEffect(() => {
     const id = window.setInterval(() => setTick((t) => t + 1), 30_000);
     return () => window.clearInterval(id);
   }, []);
-
-  // -------------------------------------------------------------------------
-  // Derived data
-  // -------------------------------------------------------------------------
 
   const allPositions = useMemo(
     () => mergeFleetWithTelemetry(fleetVehicles, telemetry),
@@ -383,21 +497,32 @@ export default function LiveMapPage() {
   );
   const totalCount = allPositions.length;
 
-  // -------------------------------------------------------------------------
-  // Handlers
-  // -------------------------------------------------------------------------
+  const mapPanelPosition = useMemo(
+    () => allPositions.find((p) => p.vehicleId === mapPanelId) ?? null,
+    [allPositions, mapPanelId],
+  );
 
-  const focusOn = (p: MapVehicle) => {
+  const mapPanelFleetEntry = useMemo(
+    () => fleetVehicles.find((v) => v.id === mapPanelId),
+    [fleetVehicles, mapPanelId],
+  );
+
+  const focusOn = (p: MapVehicle, openPanel = false) => {
     setSelectedId(p.vehicleId);
+    setMapPanelId(openPanel ? p.vehicleId : null);
     const map = mapRef.current;
     if (map) {
       map.flyTo([p.lat, p.lng], 15, { duration: 1.2 });
     }
   };
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
+  const handleMapMarkerSelect = (p: MapVehicle) => {
+    focusOn(p, true);
+  };
+
+  const handleListSelect = (p: MapVehicle) => {
+    focusOn(p, false);
+  };
 
   const descriptionText = isLoading
     ? 'Se incarca pozitiile GPS...'
@@ -429,7 +554,6 @@ export default function LiveMapPage() {
       </PageHeader>
 
       <div className="grid h-[calc(100vh-12rem)] min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,30%)_1fr]">
-        {/* Left panel: vehicle list */}
         <Card className="flex flex-col overflow-hidden">
           <div className="border-b p-3">
             <div className="relative">
@@ -469,7 +593,7 @@ export default function LiveMapPage() {
                     <li key={p.vehicleId}>
                       <button
                         type="button"
-                        onClick={() => focusOn(p)}
+                        onClick={() => handleListSelect(p)}
                         className={cn(
                           'group flex w-full items-start gap-3 px-3 py-3 text-left transition-all duration-150',
                           'hover:bg-muted/50 animate-fade-in-up',
@@ -560,7 +684,6 @@ export default function LiveMapPage() {
           </div>
         </Card>
 
-        {/* Right panel: map */}
         <Card className="relative overflow-hidden">
           <MapContainer
             center={ROMANIA_CENTER}
@@ -580,10 +703,19 @@ export default function LiveMapPage() {
                 key={p.vehicleId}
                 position={p}
                 online={isOnline(p)}
-                onSelect={setSelectedId}
+                onMapSelect={handleMapMarkerSelect}
               />
             ))}
           </MapContainer>
+
+          {mapPanelPosition && (
+            <MapDetailPanel
+              position={mapPanelPosition}
+              driver={getPrimaryDriver(mapPanelFleetEntry)}
+              online={isOnline(mapPanelPosition)}
+              onClose={() => setMapPanelId(null)}
+            />
+          )}
 
           {!hasFleet && !isLoading && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">

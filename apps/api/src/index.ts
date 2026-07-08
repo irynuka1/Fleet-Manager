@@ -66,15 +66,22 @@ app.get('/api/uploads/:filename', authenticate, async (req, res, next) => {
     if (driverDoc) {
       enforceAgency(req, driverDoc.driver.agencyId);
     } else {
-      // Check vehicle documents
-      const vehicleDoc = await prisma.vehicleDocument.findFirst({
-        where: { filePath: { endsWith: filename } },
-        include: { vehicle: true },
+      const driverWithPhoto = await prisma.driver.findFirst({
+        where: { profilePhotoPath: { endsWith: filename } },
       });
-      if (!vehicleDoc) {
-        return res.status(404).json({ success: false, error: 'Fisier negasit' });
+      if (driverWithPhoto) {
+        enforceAgency(req, driverWithPhoto.agencyId);
+      } else {
+        // Check vehicle documents
+        const vehicleDoc = await prisma.vehicleDocument.findFirst({
+          where: { filePath: { endsWith: filename } },
+          include: { vehicle: true },
+        });
+        if (!vehicleDoc) {
+          return res.status(404).json({ success: false, error: 'Fisier negasit' });
+        }
+        enforceAgency(req, vehicleDoc.vehicle.agencyId);
       }
-      enforceAgency(req, vehicleDoc.vehicle.agencyId);
     }
 
     if (!fs.existsSync(filePath)) {

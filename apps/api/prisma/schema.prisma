@@ -128,18 +128,20 @@ model Vehicle {
 // ─── Soferi ──────────────────────────────────────────────────────
 
 model Driver {
-  id        String           @id @default(uuid())
-  firstName String
-  lastName  String
-  phone     String?
-  email     String?
-  agency    Agency           @relation(fields: [agencyId], references: [id])
-  agencyId  String
-  vehicles      DriverVehicle[]
-  documents     DriverDocument[]
-  notifications Notification[]
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id               String           @id @default(uuid())
+  firstName        String
+  lastName         String
+  phone            String?
+  email            String?
+  profilePhotoPath String?
+  profilePhotoName String?
+  agency           Agency           @relation(fields: [agencyId], references: [id])
+  agencyId         String
+  vehicles         DriverVehicle[]
+  documents        DriverDocument[]
+  notifications    Notification[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@map("drivers")
 }

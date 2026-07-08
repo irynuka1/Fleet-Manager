@@ -59,6 +59,8 @@ import { Separator } from '@/components/ui/separator';
 import api from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
+import DriverAvatar from '@/components/shared/DriverAvatar';
+import DriverProfilePhotoUpload from '@/components/shared/DriverProfilePhotoUpload';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,6 +96,8 @@ interface Driver {
   email: string | null;
   agencyId: string;
   agency: Agency;
+  profilePhotoPath?: string | null;
+  profilePhotoName?: string | null;
   documents: DriverDocument[];
   vehicles: DriverVehicle[];
 }
@@ -637,6 +641,7 @@ function DriverDialog({
                 isAgencyManager={isAgencyManager}
                 agencies={agencies}
                 submitLabel="Salveaza modificarile"
+                driver={driver}
               />
             </TabsContent>
 
@@ -674,6 +679,7 @@ function DriverInfoForm({
   isAgencyManager,
   agencies,
   submitLabel,
+  driver,
 }: {
   form: ReturnType<typeof useForm<DriverFormValues>>;
   onSubmit: (v: DriverFormValues) => void;
@@ -681,6 +687,7 @@ function DriverInfoForm({
   isAgencyManager: boolean;
   agencies: Agency[];
   submitLabel: string;
+  driver?: Driver;
 }) {
   const {
     register,
@@ -691,6 +698,29 @@ function DriverInfoForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {driver ? (
+        <DriverProfilePhotoUpload
+          driverId={driver.id}
+          firstName={driver.firstName}
+          lastName={driver.lastName}
+          profilePhotoPath={driver.profilePhotoPath}
+        />
+      ) : (
+        <div className="flex flex-col items-center gap-2 pb-2">
+          <div className="flex h-28 w-28 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted/30">
+            <DriverAvatar
+              firstName={form.watch('firstName') || '?'}
+              lastName={form.watch('lastName') || ''}
+              className="h-24 w-24"
+              fallbackClassName="text-2xl"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Salveaza soferul pentru a putea adauga o imagine de profil.
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="firstName">Prenume</Label>
@@ -922,9 +952,13 @@ export default function DriversPage() {
                     >
                       <TableCell className="font-medium pl-14">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-[11px] font-bold text-white shadow-sm shadow-teal-500/20">
-                            {driver.firstName?.[0]}{driver.lastName?.[0]}
-                          </div>
+                          <DriverAvatar
+                            firstName={driver.firstName}
+                            lastName={driver.lastName}
+                            profilePhotoPath={driver.profilePhotoPath}
+                            className="h-8 w-8"
+                            fallbackClassName="text-[11px]"
+                          />
                           <span>
                             {driver.firstName} {driver.lastName}
                           </span>
