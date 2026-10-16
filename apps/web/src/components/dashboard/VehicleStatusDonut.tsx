@@ -90,7 +90,7 @@ export default function VehicleStatusDonut({
                 background: `conic-gradient(#14b8a6 0deg ${onlineDeg}deg, #d1d5db ${onlineDeg}deg 360deg)`,
               }}
             >
-              <div className="absolute inset-5 flex flex-col items-center justify-center rounded-full bg-card shadow-sm">
+              <div className="absolute inset-5 flex flex-col items-center justify-center rounded-full bg-card shadow-xs">
                 <span className="text-3xl font-bold tracking-tight text-foreground">{total}</span>
                 <span className="text-xs text-muted-foreground">vehicule</span>
               </div>

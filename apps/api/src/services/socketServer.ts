@@ -16,9 +16,7 @@ interface JwtPayload {
 export function setupSocketServer(httpServer: HttpServer): SocketIOServer {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: env.NODE_ENV === 'development'
-        ? true
-        : (process.env.CORS_ORIGIN || 'http://localhost:5173'),
+      origin: env.NODE_ENV === 'development' ? true : env.CORS_ORIGIN,
       credentials: true,
     },
   });
@@ -70,7 +68,7 @@ export function setupSocketServer(httpServer: HttpServer): SocketIOServer {
     });
   });
 
-  console.log('[Socket.io] Server initializat pe acelasi port ca API-ul');
+  console.log('[Socket.io] Server initialised on the same port as the API');
   return io;
 }
 

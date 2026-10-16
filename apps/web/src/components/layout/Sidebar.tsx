@@ -43,7 +43,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
           <Shield className="h-5 w-5 text-white" />
         </div>
         <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
@@ -65,7 +65,7 @@ export default function Sidebar() {
                 cn(
                   'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-gradient-to-r from-teal-500/15 to-teal-600/5 text-sidebar-foreground shadow-sm shadow-teal-500/5'
+                    ? 'bg-linear-to-r from-teal-500/15 to-teal-600/5 text-sidebar-foreground shadow-xs shadow-teal-500/5'
                     : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground'
                 )
               }
@@ -102,7 +102,7 @@ export default function Sidebar() {
                     cn(
                       'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                       isActive
-                        ? 'bg-gradient-to-r from-teal-500/15 to-teal-600/5 text-sidebar-foreground shadow-sm shadow-teal-500/5'
+                        ? 'bg-linear-to-r from-teal-500/15 to-teal-600/5 text-sidebar-foreground shadow-xs shadow-teal-500/5'
                         : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground'
                     )
                   }

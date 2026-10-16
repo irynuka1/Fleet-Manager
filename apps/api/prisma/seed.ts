@@ -1,25 +1,42 @@
 import { PrismaClient, Role } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import dotenv from 'dotenv';
+import path from 'node:path';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.SEED_FORCE !== 'true') {
+    throw new Error(
+      'Seed-ul creeaza conturi cu parole demo. ' +
+      'Refuzat in production (seteaza SEED_FORCE=true daca esti sigur).',
+    );
+  }
+
   console.log('Seeding database...');
 
-  // Seed-ul pastreaza conturile/structura, dar goleste flota la fiecare rulare.
-  console.log('Curatare flota existenta (vehicule, soferi, telemetrie, alerte)...');
-  await prisma.notification.deleteMany();
-  await prisma.vehicle.deleteMany();
-  await prisma.driver.deleteMany();
-  console.log('Flota curatata.');
+  // Destructive step is opt-in: `npm run db:seed -- --reset` or SEED_RESET=true.
+  const reset = process.argv.includes('--reset') || process.env.SEED_RESET === 'true';
+  if (reset) {
+    console.log('Curatare flota existenta (vehicule, soferi, telemetrie, alerte)...');
+    await prisma.notification.deleteMany();
+    await prisma.vehicle.deleteMany();
+    await prisma.driver.deleteMany();
+    console.log('Flota curatata.');
+  }
 
   // SuperAdmin
   const hashedPassword = await bcrypt.hash('admin123', 12);
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'admin@omnikininetix.ro' },
+    where: { email: 'admin@omnikinetix.ro' },
     update: {},
     create: {
-      email: 'admin@omnikininetix.ro',
+      email: 'admin@omnikinetix.ro',
       password: hashedPassword,
       firstName: 'Super',
       lastName: 'Admin',
@@ -54,10 +71,10 @@ async function main() {
 
   // Country Manager demo
   const countryManager = await prisma.user.upsert({
-    where: { email: 'manager@omnikininetix.ro' },
+    where: { email: 'manager@omnikinetix.ro' },
     update: {},
     create: {
-      email: 'manager@omnikininetix.ro',
+      email: 'manager@omnikinetix.ro',
       password: hashedPassword,
       firstName: 'Ion',
       lastName: 'Popescu',
@@ -68,10 +85,10 @@ async function main() {
 
   // Agency Managers demo
   const agencyManager1 = await prisma.user.upsert({
-    where: { email: 'bucuresti@omnikininetix.ro' },
+    where: { email: 'bucuresti@omnikinetix.ro' },
     update: {},
     create: {
-      email: 'bucuresti@omnikininetix.ro',
+      email: 'bucuresti@omnikinetix.ro',
       password: hashedPassword,
       firstName: 'Maria',
       lastName: 'Ionescu',
@@ -81,10 +98,10 @@ async function main() {
   });
 
   const agencyManager2 = await prisma.user.upsert({
-    where: { email: 'cluj@omnikininetix.ro' },
+    where: { email: 'cluj@omnikinetix.ro' },
     update: {},
     create: {
-      email: 'cluj@omnikininetix.ro',
+      email: 'cluj@omnikinetix.ro',
       password: hashedPassword,
       firstName: 'Andrei',
       lastName: 'Munteanu',

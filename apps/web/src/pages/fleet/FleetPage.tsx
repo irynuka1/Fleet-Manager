@@ -667,7 +667,7 @@ function VehicleModal({
                           </div>
                           <div className="flex gap-2">
                             <Button type="button" variant="secondary" size="sm" onClick={() => handleDownload(doc)}>
-                              Descarcă
+                              Download
                             </Button>
                             <Button type="button" variant="destructive" size="sm" onClick={() => deleteDocMutation.mutate(doc.id)} disabled={deleteDocMutation.isPending}>
                               <Trash2 className="h-4 w-4" />
@@ -1041,7 +1041,7 @@ export default function FleetPage() {
         className="-mt-2 mb-0"
         description={`${vehiclesByCategoryData?.reduce((acc: number, g: VehiclesByCategory) => acc + g.vehicles.length, 0) ?? 0} vehicule in ${vehiclesByCategoryData?.length ?? 0} categorii`}
       >
-        <Button onClick={handleAddCategory} className="mt-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+        <Button onClick={handleAddCategory} className="mt-3 bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
           <Plus className="mr-2 h-4 w-4" />
           Adauga Categorie
         </Button>

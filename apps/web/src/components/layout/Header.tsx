@@ -72,7 +72,7 @@ export default function Header() {
               className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition-colors duration-200 hover:bg-accent"
             >
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white text-xs font-semibold">
+                <AvatarFallback className="bg-linear-to-br from-teal-500 to-teal-600 text-white text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>

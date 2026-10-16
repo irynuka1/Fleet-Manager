@@ -11,11 +11,9 @@ export const ingestSchema = z.object({
 });
 
 export const historyQuerySchema = z.object({
-  query: z.object({
-    from: z.string().optional(),
-    to: z.string().optional(),
-    limit: z.string().optional(),
-  }),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  limit: z.coerce.number().int().min(1).max(5000).optional(),
 });
 
 export type IngestInput = z.infer<typeof ingestSchema>['body'];

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
+import multer from 'multer';
 import { ZodError } from 'zod';
 import { AppError } from '../utils/AppError';
 import { env } from '../config/env';
@@ -48,7 +49,7 @@ export const errorHandler = (
   }
 
   if (err instanceof ZodError) {
-    const formattedErrors = err.errors.map((e) => ({
+    const formattedErrors = err.issues.map((e) => ({
       field: e.path.join('.'),
       message: e.message,
     }));
@@ -61,8 +62,27 @@ export const errorHandler = (
     return;
   }
 
+  if (err instanceof multer.MulterError) {
+    res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+      success: false,
+      error: err.code === 'LIMIT_FILE_SIZE'
+        ? `Fisierul depaseste dimensiunea maxima permisa (${Math.round(env.MAX_FILE_SIZE / 1024 / 1024)} MB)`
+        : 'Eroare la incarcarea fisierului',
+    });
+    return;
+  }
+
+  // Malformed JSON body (thrown by express.json / body-parser)
+  if ((err as any).type === 'entity.parse.failed') {
+    res.status(400).json({ success: false, error: 'JSON invalid' });
+    return;
+  }
+
   const statusCode = (err as any).statusCode || 500;
-  const message = err.message || 'Eroare interna a serverului';
+  // Never leak internals of unexpected errors outside development.
+  const message = statusCode >= 500 && env.NODE_ENV !== 'development'
+    ? 'Eroare interna a serverului'
+    : err.message || 'Eroare interna a serverului';
 
   res.status(statusCode).json({
     success: false,

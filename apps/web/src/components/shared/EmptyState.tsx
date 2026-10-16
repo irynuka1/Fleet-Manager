@@ -27,7 +27,7 @@ export function EmptyState({
     >
       <div className="relative">
         <div className="absolute inset-0 animate-ping rounded-full bg-primary/10" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
           <Icon className="h-7 w-7 text-primary/60" />
         </div>
       </div>

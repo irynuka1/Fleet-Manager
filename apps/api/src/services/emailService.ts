@@ -7,6 +7,15 @@ interface NotificationItem {
   message: string;
 }
 
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function getTypeIcon(type: string): string {
   switch (type) {
     case 'ITP_EXPIRING': return '&#128203;'; // clipboard
@@ -18,7 +27,7 @@ function getTypeIcon(type: string): string {
   }
 }
 
-function buildHtmlEmail(notifications: NotificationItem[]): string {
+export function buildHtmlEmail(notifications: NotificationItem[]): string {
   const rows = notifications
     .map(
       (n) => `
@@ -27,10 +36,10 @@ function buildHtmlEmail(notifications: NotificationItem[]): string {
           ${getTypeIcon(n.type)}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 600; color: #1a1a2e;">
-          ${n.title}
+          ${escapeHtml(n.title)}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #eee; color: #555;">
-          ${n.message}
+          ${escapeHtml(n.message)}
         </td>
       </tr>`,
     )

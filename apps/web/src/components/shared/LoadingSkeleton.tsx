@@ -59,7 +59,7 @@ export function CardSkeleton({ className }: CardSkeletonProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-6 shadow-sm",
+        "rounded-lg border bg-card p-6 shadow-xs",
         className
       )}
     >
@@ -91,7 +91,7 @@ export function StatsSkeleton({ count = 3, className }: StatsSkeletonProps) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="rounded-lg border bg-card p-6 shadow-sm"
+          className="rounded-lg border bg-card p-6 shadow-xs"
         >
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">

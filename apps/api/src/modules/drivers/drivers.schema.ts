@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalDate } from '../../utils/zod';
 
 export const createDriverSchema = z.object({
   body: z.object({
@@ -17,7 +18,7 @@ export const updateDriverSchema = z.object({
 export const createDocumentSchema = z.object({
   body: z.object({
     type: z.enum(['DRIVING_LICENSE', 'MEDICAL_CERTIFICATE']),
-    expiryDate: z.string().optional().nullable(),
+    expiryDate: optionalDate,
   }),
 });
 

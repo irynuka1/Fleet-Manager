@@ -11,15 +11,17 @@ function useCountUp(target: number, duration = 800) {
     if (isNaN(target)) return;
     const start = ref.current;
     const startTime = performance.now();
-    const animate = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
+    let frame = 0;
+    const animate = () => {
+      const progress = Math.min(Math.max((performance.now() - startTime) / duration, 0), 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(start + (target - start) * eased);
       setCount(current);
-      if (progress < 1) requestAnimationFrame(animate);
+      if (progress < 1) frame = requestAnimationFrame(animate);
       else ref.current = target;
     };
-    requestAnimationFrame(animate);
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
   }, [target, duration]);
   return count;
 }
@@ -93,7 +95,9 @@ export function StatsCard({
 }: StatsCardProps) {
   const colors = colorMap[color];
   const isPositive = trend ? trend.value >= 0 : true;
-  const animatedValue = typeof value === 'number' ? useCountUp(value) : null;
+  // Hook must run on every render; only use its result for numeric values.
+  const counted = useCountUp(typeof value === 'number' ? value : 0);
+  const animatedValue = typeof value === 'number' ? counted : null;
 
   const renderSparkline = (data: number[], sparkColor: string) => {
     if (!data || data.length < 2) return null;

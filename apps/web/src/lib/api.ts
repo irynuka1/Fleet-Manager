@@ -1,14 +1,47 @@
 import axios from 'axios';
 
+// The access token lives in memory only. The refresh token is an httpOnly
+// cookie managed by the API, so it is never readable from JavaScript (XSS-safe).
+let accessToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
 });
 
-// Request interceptor: inject access token + correct Content-Type
+// Single-flight refresh shared by the interceptor, app bootstrap and the socket.
+let refreshPromise: Promise<string> | null = null;
+
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post('/api/auth/refresh', null, { withCredentials: true })
+      .then(({ data }) => {
+        accessToken = data.data.accessToken as string;
+        return accessToken;
+      })
+      .catch((err) => {
+        accessToken = null;
+        throw err;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
   if (config.data instanceof FormData) {
@@ -20,58 +53,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401 + refresh
-let isRefreshing = false;
-let refreshPromise: Promise<string> | null = null;
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isAuthCall = originalRequest?.url?.startsWith('/auth/');
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthCall) {
       originalRequest._retry = true;
 
-      if (!isRefreshing) {
-        isRefreshing = true;
-        refreshPromise = (async () => {
-          try {
-            const refreshToken = localStorage.getItem('refreshToken');
-            if (!refreshToken) throw new Error('No refresh token');
-
-            const { data } = await axios.post('/api/auth/refresh', { refreshToken });
-            const newAccessToken = data.data.accessToken;
-
-            localStorage.setItem('accessToken', newAccessToken);
-            localStorage.setItem('refreshToken', data.data.refreshToken);
-
-            return newAccessToken;
-          } catch (err) {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-
-            const { useAuthStore } = await import('@/stores/auth.store');
-            useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false });
-
-            throw err;
-          } finally {
-            isRefreshing = false;
-            refreshPromise = null;
-          }
-        })();
-      }
-
       try {
-        const newToken = await refreshPromise;
+        const newToken = await refreshAccessToken();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch {
+        const { useAuthStore } = await import('@/stores/auth.store');
+        useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false });
         return Promise.reject(error);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

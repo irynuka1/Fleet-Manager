@@ -329,7 +329,7 @@ export default function UsersPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <PageHeader title="Management Utilizatori" description={`${total} utilizatori inregistrati`}>
-        <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+        <Button onClick={handleOpenCreate} className="bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
           <Plus className="mr-2 h-4 w-4" />
           Adauga Utilizator
         </Button>
@@ -389,7 +389,7 @@ export default function UsersPage() {
                     <TableRow key={user.id} className="group hover:bg-muted/50 transition-all duration-150 border-l-2 border-l-transparent hover:border-l-primary">
                       <TableCell className="font-medium pl-14 text-left">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-[11px] font-bold text-white shadow-sm shadow-teal-500/20">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-teal-600 text-[11px] font-bold text-white shadow-xs shadow-teal-500/20">
                             {user.firstName?.[0]}{user.lastName?.[0]}
                           </div>
                           <span>

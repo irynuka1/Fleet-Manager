@@ -6,7 +6,7 @@ import type { FleetVehicle, RoutePath } from './types';
 import { hasAssignedDriver } from './types';
 
 const API_URL = process.env.API_URL || 'http://localhost:3001/api';
-const ADMIN_EMAIL = process.env.SIMULATOR_EMAIL || 'admin@omnikininetix.ro';
+const ADMIN_EMAIL = process.env.SIMULATOR_EMAIL || 'admin@omnikinetix.ro';
 const ADMIN_PASSWORD = process.env.SIMULATOR_PASSWORD || 'admin123';
 const PING_INTERVAL_MS = 5000;
 const VEHICLE_POLL_INTERVAL_MS = 60_000;
@@ -66,7 +66,7 @@ async function sendParkedPing(token: string, vehicle: FleetVehicle): Promise<voi
   const depot = getDepotPosition(vehicle.agency?.city ?? vehicle.agency?.name);
   if (!depot) {
     console.warn(
-      `[GPS Simulator] Nu pot parca ${vehicle.plateNumber}: oras necunoscut`,
+      `[GPS Simulator] Cannot park ${vehicle.plateNumber}: unknown city`,
     );
     return;
   }
@@ -81,7 +81,7 @@ async function sendParkedPing(token: string, vehicle: FleetVehicle): Promise<voi
     });
     parkedVehicleIds.add(vehicle.id);
     console.log(
-      `[GPS Simulator] ${vehicle.plateNumber} parcat (fara sofer) — ${depot.lat.toFixed(4)}, ${depot.lng.toFixed(4)}`,
+      `[GPS Simulator] ${vehicle.plateNumber} parked (no driver) — ${depot.lat.toFixed(4)}, ${depot.lng.toFixed(4)}`,
     );
   } catch (err: unknown) {
     if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -101,7 +101,7 @@ async function initSimulatedVehicle(vehicle: FleetVehicle): Promise<SimulatedVeh
 
   const startOffset = Math.random() * route.path.totalDistance * 0.8;
   console.log(
-    `[GPS Simulator] Ruta OSRM: ${vehicle.name} (${vehicle.plateNumber}) — ${route.cityName}, ${(route.path.totalDistance / 1000).toFixed(1)} km`,
+    `[GPS Simulator] OSRM route: ${vehicle.name} (${vehicle.plateNumber}) — ${route.cityName}, ${(route.path.totalDistance / 1000).toFixed(1)} km`,
   );
 
   return {
@@ -139,7 +139,7 @@ async function syncFleet(
         const idx = simulated.indexOf(existing);
         simulated.splice(idx, 1);
         console.log(
-          `[GPS Simulator] Oprit traseu: ${v.plateNumber} (fara sofer asignat)`,
+          `[GPS Simulator] Route stopped: ${v.plateNumber} (no driver assigned)`,
         );
       }
       if (!parkedVehicleIds.has(v.id)) {
@@ -160,7 +160,7 @@ async function syncFleet(
     const sim = simulated[i];
     if (!freshIds.has(sim.vehicle.id)) {
       console.log(
-        `[GPS Simulator] Vehicul scos din flota: ${sim.vehicle.plateNumber}`,
+        `[GPS Simulator] Vehicle removed from the fleet: ${sim.vehicle.plateNumber}`,
       );
       parkedVehicleIds.delete(sim.vehicle.id);
       simulated.splice(i, 1);
@@ -173,13 +173,13 @@ async function syncFleet(
 }
 
 async function main() {
-  console.log('[GPS Simulator] Pornire (OSRM + flota cu soferi)...');
+  console.log('[GPS Simulator] Starting (OSRM + fleet with drivers)...');
   console.log(`[GPS Simulator] API: ${API_URL}`);
 
   let token: string;
   try {
     token = await login();
-    console.log('[GPS Simulator] Autentificare reusita');
+    console.log('[GPS Simulator] Authentication successful');
   } catch (err: unknown) {
     const message =
       axios.isAxiosError(err) && err.response?.data?.error
@@ -187,7 +187,7 @@ async function main() {
         : err instanceof Error
           ? err.message
           : String(err);
-    console.error('[GPS Simulator] Esec autentificare:', message);
+    console.error('[GPS Simulator] Authentication failed:', message);
     process.exit(1);
   }
 
@@ -252,7 +252,7 @@ async function main() {
 
     if (tickCount % 6 === 0) {
       console.log(
-        `[GPS Simulator] Tick ${tickCount}: ${simulated.length} vehicule active (cu sofer)`,
+        `[GPS Simulator] Tick ${tickCount}: ${simulated.length} active vehicles (with driver)`,
       );
     }
   };
@@ -266,17 +266,17 @@ async function main() {
         stopTicking();
         const fleet = await fetchVehicles(token);
         if (fleet.length === 0) {
-          console.log('[GPS Simulator] Niciun vehicul in flota — astept...');
+          console.log('[GPS Simulator] No vehicles in the fleet — waiting...');
         } else {
           console.log(
-            `[GPS Simulator] ${fleet.length} vehicule in flota, 0 cu soferi activi — astept...`,
+            `[GPS Simulator] ${fleet.length} vehicles in the fleet, 0 with active drivers — waiting...`,
           );
         }
         return;
       }
 
       if (activeBefore === 0 && simulated.length > 0) {
-        console.log(`[GPS Simulator] ${simulated.length} vehicule cu soferi pe traseu`);
+        console.log(`[GPS Simulator] ${simulated.length} vehicles with drivers on route`);
         await tick();
         startTicking();
       }
@@ -289,7 +289,7 @@ async function main() {
         }
       } else {
         const message = err instanceof Error ? err.message : String(err);
-        console.error('[GPS Simulator] Esec refresh flota:', message);
+        console.error('[GPS Simulator] Fleet refresh failed:', message);
       }
     }
   };
@@ -300,11 +300,11 @@ async function main() {
     await tick();
     startTicking();
     console.log(
-      `[GPS Simulator] Ping-uri la fiecare ${PING_INTERVAL_MS / 1000}s. Ctrl+C pentru oprire.`,
+      `[GPS Simulator] Pings every ${PING_INTERVAL_MS / 1000}s. Press Ctrl+C to stop.`,
     );
   } else {
     console.log(
-      `[GPS Simulator] Verificare flota la fiecare ${VEHICLE_POLL_INTERVAL_MS / 1000}s. Ctrl+C pentru oprire.`,
+      `[GPS Simulator] Fleet check every ${VEHICLE_POLL_INTERVAL_MS / 1000}s. Press Ctrl+C to stop.`,
     );
   }
 
@@ -312,6 +312,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[GPS Simulator] Eroare neasteptata:', err);
+  console.error('[GPS Simulator] Unexpected error:', err);
   process.exit(1);
 });

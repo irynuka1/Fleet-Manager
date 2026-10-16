@@ -1,8 +1,13 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import prisma from '../../config/database';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
+
+// Compared against when the email is unknown so response time doesn't reveal
+// which accounts exist.
+const DUMMY_HASH = bcrypt.hashSync('timing-equaliser', 12);
 
 export class AuthService {
   static async login(email: string, password: string) {
@@ -11,11 +16,11 @@ export class AuthService {
       include: { agency: true },
     });
 
+    const isPasswordValid = await bcrypt.compare(password, user?.password ?? DUMMY_HASH);
+
     if (!user) {
       throw new AppError('Email sau parola invalida', 401);
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       throw new AppError('Email sau parola invalida', 401);
@@ -35,7 +40,8 @@ export class AuthService {
     const refreshToken = jwt.sign(
       { userId: user.id },
       env.JWT_REFRESH_SECRET,
-      { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any }
+      // jti makes every token unique, even when two are issued within the same second.
+      { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any, jwtid: randomUUID() }
     );
 
     const decoded = jwt.decode(refreshToken) as { exp: number };
@@ -58,6 +64,12 @@ export class AuthService {
   }
 
   static async refresh(refreshToken: string) {
+    try {
+      jwt.verify(refreshToken, env.JWT_REFRESH_SECRET);
+    } catch {
+      throw new AppError('Refresh token invalid', 401);
+    }
+
     const storedToken = await prisma.refreshToken.findFirst({
       where: { token: refreshToken },
     });
@@ -95,21 +107,24 @@ export class AuthService {
     const newRefreshToken = jwt.sign(
       { userId: user.id },
       env.JWT_REFRESH_SECRET,
-      { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any }
+      // jti makes every token unique, even when two are issued within the same second.
+      { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any, jwtid: randomUUID() }
     );
 
     const decoded = jwt.decode(newRefreshToken) as { exp: number };
 
-    await prisma.refreshToken.delete({
-      where: { id: storedToken.id },
-    });
+    // Rotate atomically; deleteMany makes a concurrent replay of the same token fail.
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.refreshToken.deleteMany({ where: { id: storedToken.id } });
+      if (count === 0) throw new AppError('Refresh token invalid', 401);
 
-    await prisma.refreshToken.create({
-      data: {
-        token: newRefreshToken,
-        userId: user.id,
-        expiresAt: new Date(decoded.exp * 1000),
-      },
+      await tx.refreshToken.create({
+        data: {
+          token: newRefreshToken,
+          userId: user.id,
+          expiresAt: new Date(decoded.exp * 1000),
+        },
+      });
     });
 
     return {

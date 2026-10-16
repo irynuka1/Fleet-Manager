@@ -301,7 +301,7 @@ export default function NotificationsPage() {
                 className={cn(
                   'transition-all duration-200',
                   filter === f.value &&
-                    'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20'
+                    'bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20'
                 )}
                 onClick={() => handleFilterChange(f.value)}
               >
@@ -358,7 +358,7 @@ export default function NotificationsPage() {
                     key={notification.id}
                     className={cn(
                       'flex items-start gap-4 px-5 py-4 transition-colors duration-150 hover:bg-accent/50',
-                      !notification.isRead && 'bg-teal-500/[0.03] dark:bg-teal-500/[0.06]'
+                      !notification.isRead && 'bg-teal-500/3 dark:bg-teal-500/6'
                     )}
                   >
                     {/* Icon */}
@@ -375,7 +375,7 @@ export default function NotificationsPage() {
                               {notification.title}
                             </p>
                             {!notification.isRead && (
-                              <span className="h-2 w-2 shrink-0 rounded-full bg-teal-500 shadow-sm shadow-teal-500/40" />
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-teal-500 shadow-xs shadow-teal-500/40" />
                             )}
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground leading-relaxed">

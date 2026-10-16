@@ -85,7 +85,7 @@ export function setupCronJobs(): void {
     } catch (error) {
       console.error('[CRON] Eroare la rularea verificarii de alerte:', error);
     }
-  });
+  }, { timezone: process.env.CRON_TIMEZONE || 'Europe/Bucharest' });
 
   console.log('[CRON] Job-uri programate: verificare alerte zilnic la 11:00');
 }

@@ -311,7 +311,7 @@ function DocumentsTab({ driver }: { driver: Driver }) {
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="secondary" size="sm" onClick={() => handleDownload(doc)}>
-                  Descarca
+                  Download
                 </Button>
                 <Button
                   type="button"
@@ -883,7 +883,7 @@ export default function DriversPage() {
         title="Management Soferi"
         description={`${driversResponse?.total ?? 0} soferi inregistrati`}
       >
-        <Button onClick={() => openCreate()} className="mt-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+        <Button onClick={() => openCreate()} className="mt-3 bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
           <Plus className="mr-2 h-4 w-4" />
           Adauga Sofer
         </Button>
@@ -920,7 +920,7 @@ export default function DriversPage() {
               }
               action={
                 !debouncedSearch ? (
-                  <Button onClick={() => openCreate()} className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+                  <Button onClick={() => openCreate()} className="bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
                     <Plus className="mr-2 h-4 w-4" />
                     Adauga Sofer
                   </Button>

@@ -211,7 +211,7 @@ export default function AgenciesPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <PageHeader title="Management Agentii" description={`${total} agentii inregistrate`}>
-        <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
+        <Button onClick={handleOpenCreate} className="bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20">
           <Plus className="mr-2 h-4 w-4" />
           Adauga Agentie
         </Button>

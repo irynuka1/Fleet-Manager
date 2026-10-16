@@ -5,7 +5,7 @@ const imageCache = new Map<string, string>();
 
 export function getUploadFilename(filePath: string | null | undefined): string | null {
   if (!filePath) return null;
-  return filePath.split('/').pop() ?? null;
+  return filePath.split(/[\\/]/).pop() ?? null;
 }
 
 export function useAuthenticatedImageUrl(filePath: string | null | undefined): string | undefined {

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '@/lib/api';
+import api, { refreshAccessToken, setAccessToken } from '@/lib/api';
 
 interface AuthUser {
   id: string;
@@ -28,22 +28,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('accessToken', data.data.accessToken);
-    localStorage.setItem('refreshToken', data.data.refreshToken);
+    setAccessToken(data.data.accessToken);
     set({ user: data.data.user, isAuthenticated: true });
   },
 
   logout: async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        await api.post('/auth/logout', { refreshToken });
-      }
+      await api.post('/auth/logout');
     } catch {
       // ignore
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      setAccessToken(null);
       set({ user: null, isAuthenticated: false });
       import('@/App').then(({ queryClient }) => queryClient.clear());
     }
@@ -59,17 +54,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   initialize: async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      set({ isLoading: false, isAuthenticated: false });
-      return;
-    }
+    // Page load: the httpOnly cookie (if any) is exchanged for an in-memory access token.
     try {
+      await refreshAccessToken();
       const { data } = await api.get('/auth/me');
       set({ user: data.data, isAuthenticated: true, isLoading: false });
     } catch {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      setAccessToken(null);
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },

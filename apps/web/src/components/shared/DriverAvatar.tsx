@@ -32,7 +32,7 @@ export default function DriverAvatar({
       ) : null}
       <AvatarFallback
         className={cn(
-          'bg-gradient-to-br from-teal-500 to-teal-600 text-white font-semibold',
+          'bg-linear-to-br from-teal-500 to-teal-600 text-white font-semibold',
           fallbackClassName
         )}
       >

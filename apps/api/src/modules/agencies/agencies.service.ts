@@ -1,13 +1,11 @@
 import prisma from '../../config/database';
+import { parsePagination } from '../../utils/pagination';
 import { CreateAgencyInput, UpdateAgencyInput } from './agencies.schema';
 import { AppError } from '../../utils/AppError';
 
 export const agenciesService = {
   async list(query: { page?: number; limit?: number; search?: string }) {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const cappedLimit = Math.min(limit, 100);
-    const skip = (page - 1) * cappedLimit;
+    const { page, limit: cappedLimit, skip } = parsePagination(query);
 
     const where: any = {};
 

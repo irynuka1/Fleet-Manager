@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalDate } from '../../utils/zod';
 
 export const createVehicleSchema = z.object({
   body: z.object({
@@ -7,11 +8,11 @@ export const createVehicleSchema = z.object({
     categoryId: z.string().uuid(),
     agencyId: z.string().uuid(),
     monitoringType: z.enum(['KILOMETERS', 'HOURS']),
-    currentKm: z.number().optional().nullable(),
-    currentHours: z.number().optional().nullable(),
-    revisionThreshold: z.number().optional().nullable(),
-    itpExpiryDate: z.string().optional().nullable(),
-    rcaExpiryDate: z.string().optional().nullable(),
+    currentKm: z.number().min(0).optional().nullable(),
+    currentHours: z.number().min(0).optional().nullable(),
+    revisionThreshold: z.number().min(0).optional().nullable(),
+    itpExpiryDate: optionalDate,
+    rcaExpiryDate: optionalDate,
   }),
 });
 
@@ -28,7 +29,7 @@ export const assignDriverSchema = z.object({
 export const createVehicleDocumentSchema = z.object({
   body: z.object({
     type: z.enum(['ITP', 'RCA', 'REGISTRATION', 'INSURANCE', 'OTHER']),
-    expiryDate: z.string().optional().nullable(),
+    expiryDate: optionalDate,
   }),
 });
 

@@ -183,12 +183,12 @@ interface AnimatedMarkerProps {
 }
 
 function AnimatedMarker({ points, progress }: AnimatedMarkerProps) {
-  if (points.length === 0) return null;
-
   const cumulative = useMemo(
     () => buildCumulativeDistances(points),
     [points],
   );
+
+  if (points.length === 0) return null;
 
   if (points.length === 1) {
     return (
@@ -276,7 +276,10 @@ export default function PlaybackPage() {
     },
   });
 
-  const points = historyQuery.data?.data ?? [];
+  const points = useMemo(
+    () => historyQuery.data?.data ?? [],
+    [historyQuery.data],
+  );
 
   // When a new dataset is loaded, reset playback.
   // Depend ONLY on activeRange so background refetches don't reset progress.
@@ -350,7 +353,14 @@ export default function PlaybackPage() {
   const currentSample = useMemo(() => {
     if (points.length === 0) return null;
     if (points.length === 1) {
-      return { point: points[0], fraction: 0 };
+      const only = points[0];
+      return {
+        lat: only.lat,
+        lng: only.lng,
+        heading: only.heading ?? 0,
+        speed: only.speed ?? 0,
+        createdAt: only.createdAt,
+      };
     }
     const { point, next, fraction } = samplePointAtProgress(
       points,
@@ -492,7 +502,7 @@ export default function PlaybackPage() {
             <Button
               onClick={handleLoad}
               disabled={!vehicleId || isLoading}
-              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20"
+              className="bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20"
             >
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -570,7 +580,7 @@ export default function PlaybackPage() {
                   <Button
                     onClick={togglePlay}
                     size="sm"
-                    className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20"
+                    className="bg-linear-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-md shadow-teal-500/20"
                   >
                     {playing ? (
                       <>

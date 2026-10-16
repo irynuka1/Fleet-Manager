@@ -1,4 +1,5 @@
 import prisma from '../../config/database';
+import { parsePagination } from '../../utils/pagination';
 import { CreateDriverInput, UpdateDriverInput } from './drivers.schema';
 import { AppError } from '../../utils/AppError';
 import fs from 'fs';
@@ -11,10 +12,7 @@ export const driversService = {
     search?: string;
     agencyId?: string;
   }) {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const cappedLimit = Math.min(limit, 100);
-    const skip = (page - 1) * cappedLimit;
+    const { page, limit: cappedLimit, skip } = parsePagination(query);
 
     const where: any = {};
 
@@ -126,7 +124,7 @@ export const driversService = {
 
   async addDocument(
     driverId: string,
-    data: { type: string; expiryDate?: string | null; filePath?: string; fileName?: string },
+    data: { type: string; expiryDate?: string | Date | null; filePath?: string; fileName?: string },
   ) {
     const createData: any = {
       driverId,

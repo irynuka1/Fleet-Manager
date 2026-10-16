@@ -3,6 +3,7 @@ import { telemetryService } from './telemetry.service';
 import { enforceAgency, getEffectiveAgencyId } from '../../middleware/agencyScope';
 import { getIO } from '../../services/socketServer';
 import prisma from '../../config/database';
+import { historyQuerySchema } from './telemetry.schema';
 
 export const telemetryController = {
   async ingest(req: Request, res: Response, next: NextFunction) {
@@ -54,9 +55,7 @@ export const telemetryController = {
       }
       enforceAgency(req, vehicle.agencyId);
 
-      const from = req.query.from ? new Date(req.query.from as string) : undefined;
-      const to = req.query.to ? new Date(req.query.to as string) : undefined;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const { from, to, limit } = historyQuerySchema.parse(req.query);
 
       const result = await telemetryService.getHistory(vehicleId, { from, to, limit });
       return res.json({ success: true, data: result.data, truncated: result.truncated });

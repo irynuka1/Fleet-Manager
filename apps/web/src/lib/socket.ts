@@ -1,29 +1,20 @@
 import { io, Socket } from 'socket.io-client';
-import axios from 'axios';
+import { refreshAccessToken } from '@/lib/api';
 
 let socket: Socket | null = null;
+
+// Same origin by default (Vite proxies /socket.io in dev; reverse proxy in prod).
+// Override with VITE_SOCKET_URL when the API is hosted on a different origin.
+const SOCKET_URL: string | undefined = import.meta.env.VITE_SOCKET_URL || undefined;
 
 export function getSocket(): Socket | null {
   return socket;
 }
 
-async function refreshToken(): Promise<string | null> {
-  const rt = localStorage.getItem('refreshToken');
-  if (!rt) return null;
-  try {
-    const { data } = await axios.post('/api/auth/refresh', { refreshToken: rt });
-    localStorage.setItem('accessToken', data.data.accessToken);
-    localStorage.setItem('refreshToken', data.data.refreshToken);
-    return data.data.accessToken;
-  } catch {
-    return null;
-  }
-}
-
 export function connectSocket(token: string): Socket {
   if (socket?.connected) return socket;
   if (socket) socket.disconnect();
-  socket = io('http://localhost:3001', {
+  socket = io(SOCKET_URL ?? window.location.origin, {
     auth: { token },
     transports: ['websocket', 'polling'],
     autoConnect: true,
@@ -32,7 +23,7 @@ export function connectSocket(token: string): Socket {
 
   socket.on('connect_error', async (err) => {
     if (err.message?.toLowerCase().includes('token')) {
-      const newToken = await refreshToken();
+      const newToken = await refreshAccessToken().catch(() => null);
       if (newToken && socket) {
         socket.auth = { token: newToken };
         socket.connect();

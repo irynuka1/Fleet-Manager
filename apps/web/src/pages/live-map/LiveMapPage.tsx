@@ -17,7 +17,7 @@ import {
   User,
 } from 'lucide-react';
 
-import api from '@/lib/api';
+import api, { getAccessToken } from '@/lib/api';
 import { depotForCity } from '@/lib/geo';
 import { cn } from '@/lib/utils';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -243,7 +243,7 @@ function MapDetailPanel({ position, driver, online, onClose }: MapDetailPanelPro
     driver?.agency?.city ?? driver?.agency?.name ?? position.vehicle?.agency?.city ?? position.vehicle?.agency?.name ?? '-';
 
   return (
-    <div className="absolute inset-y-0 right-0 z-[1000] flex w-full max-w-sm animate-fade-in">
+    <div className="absolute inset-y-0 right-0 z-1000 flex w-full max-w-sm animate-fade-in">
       <div className="ml-auto flex h-full w-full flex-col border-l border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <p className="text-sm font-semibold text-foreground">Detalii vehicul</p>
@@ -423,7 +423,7 @@ export default function LiveMapPage() {
   }, [initialPositions]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (!token) return;
 
     const socket = connectSocket(token);

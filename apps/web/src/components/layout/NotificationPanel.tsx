@@ -242,7 +242,7 @@ export default function NotificationPanel() {
       >
         <Bell className="h-[18px] w-[18px] text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-teal-500 px-1 text-[10px] font-bold text-white shadow-sm shadow-teal-500/30 animate-in fade-in zoom-in duration-200">
+          <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-teal-500 px-1 text-[10px] font-bold text-white shadow-xs shadow-teal-500/30 animate-in fade-in zoom-in duration-200">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -311,7 +311,7 @@ export default function NotificationPanel() {
                       key={notification.id}
                       className={cn(
                         'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-accent/50',
-                        !notification.isRead && 'bg-teal-500/[0.03] dark:bg-teal-500/[0.06]'
+                        !notification.isRead && 'bg-teal-500/3 dark:bg-teal-500/6'
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -328,7 +328,7 @@ export default function NotificationPanel() {
                           </p>
                           {/* Unread dot */}
                           {!notification.isRead && (
-                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-teal-500 shadow-sm shadow-teal-500/40" />
+                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-teal-500 shadow-xs shadow-teal-500/40" />
                           )}
                         </div>
                         <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">

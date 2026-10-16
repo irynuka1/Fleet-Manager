@@ -7,4 +7,5 @@ build/
 .DS_Store
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
-docker-compose.yml
+apps/api/uploads-test/
+coverage/

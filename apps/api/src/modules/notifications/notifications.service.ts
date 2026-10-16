@@ -1,4 +1,5 @@
 import prisma from '../../config/database';
+import { parsePagination } from '../../utils/pagination';
 
 export const notificationsService = {
   async list(query: {
@@ -7,10 +8,7 @@ export const notificationsService = {
     agencyId?: string;
     isRead?: boolean;
   }) {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const cappedLimit = Math.min(limit, 100);
-    const skip = (page - 1) * cappedLimit;
+    const { page, limit: cappedLimit, skip } = parsePagination(query);
 
     const where: any = {};
 

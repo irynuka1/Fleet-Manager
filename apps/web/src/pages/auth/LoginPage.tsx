@@ -52,7 +52,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* LEFT PANEL - Branding (hidden on mobile) */}
-      <div className="relative hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 p-12 text-white">
+      <div className="relative hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col justify-between overflow-hidden bg-linear-to-br from-slate-900 via-teal-950 to-slate-900 p-12 text-white">
         {/* Geometric grid pattern */}
         <div className="absolute inset-0 overflow-hidden opacity-20">
           <svg className="absolute h-full w-full" xmlns="http://www.w3.org/2000/svg">
@@ -66,18 +66,18 @@ export default function LoginPage() {
         </div>
 
         {/* Animated gradient orbs - subtle, not blobs */}
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-gradient-to-br from-teal-500/20 to-cyan-500/10 blur-3xl animate-float-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-gradient-to-br from-cyan-500/15 to-teal-500/5 blur-3xl animate-float-slower" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-linear-to-br from-teal-500/20 to-cyan-500/10 blur-3xl animate-float-slow" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-linear-to-br from-cyan-500/15 to-teal-500/5 blur-3xl animate-float-slower" />
 
         {/* Decorative lines */}
-        <div className="absolute top-20 right-12 w-32 h-px bg-gradient-to-r from-transparent via-teal-400/40 to-transparent" />
-        <div className="absolute bottom-32 left-8 w-24 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent" />
-        <div className="absolute top-1/2 right-20 w-px h-24 bg-gradient-to-b from-transparent via-teal-400/30 to-transparent" />
+        <div className="absolute top-20 right-12 w-32 h-px bg-linear-to-r from-transparent via-teal-400/40 to-transparent" />
+        <div className="absolute bottom-32 left-8 w-24 h-px bg-linear-to-r from-transparent via-teal-400/30 to-transparent" />
+        <div className="absolute top-1/2 right-20 w-px h-24 bg-linear-to-b from-transparent via-teal-400/30 to-transparent" />
 
         {/* Top - Branding */}
         <div className="relative z-10 flex flex-col items-start">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25">
               <Shield className="h-8 w-8 text-white" />
             </div>
             <div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
           <h2 className="text-4xl font-bold leading-tight tracking-tight xl:text-5xl">
             Platforma de<br />
             Management<br />
-            <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
               Flota Auto
             </span>
           </h2>
@@ -128,7 +128,7 @@ export default function LoginPage() {
 
         {/* Mobile-only header with logo */}
         <div className="mb-8 flex flex-col items-center lg:hidden">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25">
             <Shield className="h-7 w-7 text-white" />
           </div>
           <h1 className="mt-3 text-2xl font-bold tracking-tight">OmniKinetix</h1>
@@ -157,7 +157,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@omnikininetix.ro"
+                  placeholder="admin@omnikinetix.ro"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -198,7 +198,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="h-11 w-full bg-gradient-to-r from-teal-600 to-teal-500 font-semibold text-white shadow-md shadow-teal-500/20 transition-all hover:from-teal-500 hover:to-teal-400 hover:shadow-lg hover:shadow-teal-500/30"
+                className="h-11 w-full bg-linear-to-r from-teal-600 to-teal-500 font-semibold text-white shadow-md shadow-teal-500/20 transition-all hover:from-teal-500 hover:to-teal-400 hover:shadow-lg hover:shadow-teal-500/30"
                 disabled={loading}
               >
                 {loading ? (
@@ -217,15 +217,15 @@ export default function LoginPage() {
               <div className="space-y-1 text-xs text-muted-foreground">
                 <p>
                   <span className="font-medium text-foreground/70">Super Admin:</span>{' '}
-                  admin@omnikininetix.ro
+                  admin@omnikinetix.ro
                 </p>
                 <p>
                   <span className="font-medium text-foreground/70">Manager Tara:</span>{' '}
-                  manager@omnikininetix.ro
+                  manager@omnikinetix.ro
                 </p>
                 <p>
                   <span className="font-medium text-foreground/70">Manager Agentie:</span>{' '}
-                  bucuresti@omnikininetix.ro
+                  bucuresti@omnikinetix.ro
                 </p>
                 <p className="mt-2 border-t border-dashed border-muted-foreground/15 pt-2">
                   <span className="font-medium text-foreground/70">Parola:</span> admin123

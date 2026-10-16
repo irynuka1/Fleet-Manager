@@ -1,8 +1,10 @@
 // Note: ensure Prisma Client is generated (e.g. npx prisma generate) to resolve IDE linting issues.
 import prisma from '../../config/database';
+import { parsePagination } from '../../utils/pagination';
 import { CreateVehicleInput, UpdateVehicleInput } from './vehicles.schema';
 import { AppError } from '../../utils/AppError';
 import fs from 'fs';
+import path from 'path';
 
 export const vehiclesService = {
   async list(query: {
@@ -12,10 +14,7 @@ export const vehiclesService = {
     agencyId?: string;
     categoryId?: string;
   }) {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const cappedLimit = Math.min(limit, 100);
-    const skip = (page - 1) * cappedLimit;
+    const { page, limit: cappedLimit, skip } = parsePagination(query);
 
     const where: any = {};
 
@@ -118,7 +117,24 @@ export const vehiclesService = {
   },
 
   async delete(id: string) {
-    return prisma.vehicle.delete({ where: { id } });
+    const documents = await prisma.vehicleDocument.findMany({
+      where: { vehicleId: id },
+      select: { filePath: true },
+    });
+
+    const result = await prisma.vehicle.delete({ where: { id } });
+
+    // DB rows are removed by cascade; clean the files up so they don't pile up.
+    for (const { filePath } of documents) {
+      if (!filePath) continue;
+      try {
+        fs.unlinkSync(path.resolve(filePath));
+      } catch {
+        // already gone
+      }
+    }
+
+    return result;
   },
 
   async assignDriver(vehicleId: string, driverId: string) {
@@ -209,7 +225,7 @@ export const vehiclesService = {
     vehicleId: string,
     data: {
       type: 'ITP' | 'RCA' | 'REGISTRATION' | 'INSURANCE' | 'OTHER';
-      expiryDate: string | null;
+      expiryDate: string | Date | null;
       filePath?: string;
       fileName?: string;
     },
@@ -252,7 +268,7 @@ export const vehiclesService = {
 
     if (document.filePath) {
       try {
-        fs.unlinkSync(document.filePath);
+        fs.unlinkSync(path.resolve(document.filePath));
       } catch (err) {
         console.error('Eroare la stergerea fisierului:', err);
       }

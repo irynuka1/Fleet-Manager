@@ -29,7 +29,7 @@ export function PageHeader({
           <div className="flex items-center gap-2 shrink-0">{children}</div>
         )}
       </div>
-      <div className="mt-4 h-px bg-gradient-to-r from-primary/20 via-primary/60 to-primary/20" />
+      <div className="mt-4 h-px bg-linear-to-r from-primary/20 via-primary/60 to-primary/20" />
     </div>
   );
 }
